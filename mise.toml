@@ -216,6 +216,36 @@ depends = ["docker:push:base", "docker:push:app"]
 description = "Run local Docker container (amd64)"
 run = "docker run -it --platform linux/amd64 -p 50080:80 apollos-ai-local"
 
+# --- Deploy Compose tasks ---
+
+[tasks."docker:up"]
+description = "Start deploy stack with GHCR images"
+run = "docker compose -f deploy/docker/docker-compose.yml --profile proxy --profile postgres up -d"
+
+[tasks."docker:up:local"]
+description = "Start deploy stack with locally built image"
+run = "docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.local.yml --profile proxy --profile postgres up -d"
+
+[tasks."docker:up:app"]
+description = "Start app only (no proxy, no database)"
+run = "docker compose -f deploy/docker/docker-compose.yml up -d"
+
+[tasks."docker:up:app:local"]
+description = "Start app only with local image (no proxy, no database)"
+run = "docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.local.yml up -d"
+
+[tasks."docker:down"]
+description = "Stop deploy stack"
+run = "docker compose -f deploy/docker/docker-compose.yml --profile proxy --profile postgres down"
+
+[tasks."docker:down:local"]
+description = "Stop deploy stack with locally built image"
+run = "docker compose -f deploy/docker/docker-compose.yml -f deploy/docker/docker-compose.local.yml --profile proxy --profile postgres down -v"
+
+[tasks."docker:logs"]
+description = "Tail deploy stack logs"
+run = "docker compose -f deploy/docker/docker-compose.yml logs -f"
+
 # ============================================================================
 # Git Hooks (hk)
 # ============================================================================

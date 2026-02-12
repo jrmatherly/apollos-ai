@@ -20,6 +20,8 @@
 #
 # See also: deploy/docker/setup.sh for guided first-time setup
 
+name: apollos-ai
+
 services:
   # ─── Apollos AI Application ────────────────────────────────────────
   apollos-ai:

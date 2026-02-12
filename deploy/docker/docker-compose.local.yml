@@ -1,0 +1,23 @@
+# Apollos AI — Local Image Override for Testing
+#
+# Uses locally built images instead of pulling from GHCR.
+# Build the local image first:  mise run docker:build:local
+#
+# Usage (from deploy/docker/):
+#   # App only
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+#
+#   # Full stack
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml \
+#     --profile proxy --profile postgres up -d
+#
+# Or use mise:
+#   mise run docker:up:local
+#   mise run docker:up:local -- --profile proxy --profile postgres
+
+name: apollos-ai-local
+
+services:
+  apollos-ai:
+    image: apollos-ai-local
+    pull_policy: never

@@ -18,8 +18,8 @@
 
 {$DOMAIN:localhost} {
 	# Custom certificates (default) — comment this line for automatic HTTPS
-	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
-	# tls internal
+	# tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
+	tls internal
 
 	reverse_proxy apollos-ai:80 {
 		# WebSocket support for Socket.IO
