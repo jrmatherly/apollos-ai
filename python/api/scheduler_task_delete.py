@@ -6,6 +6,10 @@ from python.helpers.task_scheduler import TaskScheduler, TaskState
 
 
 class SchedulerTaskDelete(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         Delete a task from the scheduler by ID

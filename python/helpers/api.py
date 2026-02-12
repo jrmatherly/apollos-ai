@@ -50,6 +50,11 @@ class ApiHandler:
     def requires_csrf(cls) -> bool:
         return cls.requires_auth()
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        """Return (resource, action) for RBAC, or None to skip."""
+        return None
+
     @abstractmethod
     async def process(self, input: Input, request: Request) -> Output:
         pass
@@ -58,6 +63,37 @@ class ApiHandler:
         try:
             # Populate g.current_user from session for downstream handlers
             g.current_user = session.get("user")
+
+            # RBAC permission check (after auth, before process)
+            perm = self.__class__.get_required_permission()
+            if perm is not None:
+                user = g.current_user
+                if user is not None:  # Skip RBAC in no-auth mode
+                    if not user.get("is_system_admin"):
+                        try:
+                            from python.helpers.rbac import check_permission
+
+                            domain = (
+                                f"org:{user.get('org_id', 'default')}"
+                                f"/team:{user.get('team_id', 'default')}"
+                            )
+                            if not check_permission(
+                                str(user["id"]), domain, perm[0], perm[1]
+                            ):
+                                return Response(
+                                    json.dumps({"error": "Forbidden"}),
+                                    status=403,
+                                    mimetype="application/json",
+                                )
+                        except RuntimeError as e:
+                            PrintStyle.error(f"RBAC check failed: {e}")
+                            return Response(
+                                json.dumps(
+                                    {"error": "Authorization service unavailable"}
+                                ),
+                                status=503,
+                                mimetype="application/json",
+                            )
 
             # input data from request based on type
             input_data: Input = {}

@@ -100,6 +100,12 @@ cached-property==2.0.1
     # via exchangelib
 cachetools==7.0.1
     # via py-key-value-aio
+casbin==1.43.0
+    # via
+    #   apollos-ai
+    #   casbin-sqlalchemy-adapter
+casbin-sqlalchemy-adapter==1.4.0
+    # via apollos-ai
 catalogue==2.0.10
     # via
     #   spacy
@@ -1734,7 +1740,9 @@ sgmllib3k==1.0.0
 simple-websocket==1.1.0
     # via python-engineio
 simpleeval==1.0.3
-    # via apollos-ai
+    # via
+    #   apollos-ai
+    #   casbin
 six==1.17.0
     # via
     #   feedfinder2
@@ -1768,6 +1776,7 @@ sqlalchemy==2.0.46
     # via
     #   alembic
     #   apollos-ai
+    #   casbin-sqlalchemy-adapter
     #   langchain
     #   langchain-community
 srsly==2.5.2

@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class GetChatFilesPath(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "read_own")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         ctxid = input.get("ctxid", "")
         if not ctxid:

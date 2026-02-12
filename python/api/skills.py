@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class Skills(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("skills", "read")
+
     async def process(self, input: Input, request: Request) -> Output:
         action = input.get("action", "")
 

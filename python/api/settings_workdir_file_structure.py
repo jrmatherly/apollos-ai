@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class SettingsWorkdirFileStructure(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("settings", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         workdir_path = input.get("workdir_path", "")
         workdir_path = files.get_abs_path_development(workdir_path)

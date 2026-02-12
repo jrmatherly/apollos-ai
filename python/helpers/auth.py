@@ -226,6 +226,29 @@ class AuthManager:
             if userinfo.get("groups"):
                 user_store.sync_group_memberships(db, user, userinfo["groups"])
 
+            # Capture user attributes for session before leaving DB context
+            is_system_admin = bool(user.is_system_admin)
+            # Resolve primary org/team from first membership
+            org_id = "default"
+            team_id = "default"
+            if user.org_memberships:
+                org_id = user.org_memberships[0].org_id
+            else:
+                PrintStyle.warning(f"User {user.id} has no org memberships")
+            if user.team_memberships:
+                tm = user.team_memberships[0]
+                team_id = tm.team_id
+            else:
+                PrintStyle.warning(f"User {user.id} has no team memberships")
+
+        # Sync Casbin RBAC roles for this user
+        try:
+            from python.helpers.rbac import sync_user_roles
+
+            sync_user_roles(userinfo["sub"])
+        except Exception as e:
+            PrintStyle.warning(f"RBAC role sync skipped: {e}")
+
         # Prevent session fixation: clear stale pre-auth data before populating
         session.clear()
         session["csrf_token"] = secrets.token_urlsafe(32)
@@ -234,6 +257,9 @@ class AuthManager:
             "email": userinfo["email"],
             "name": userinfo.get("name"),
             "auth_method": userinfo.get("auth_method", "entra"),
+            "is_system_admin": is_system_admin,
+            "org_id": org_id,
+            "team_id": team_id,
         }
         # Backward compatibility — existing code checks session["authentication"]
         session["authentication"] = True

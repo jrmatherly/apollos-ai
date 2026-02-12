@@ -5,6 +5,10 @@ from python.helpers.file_browser import FileBrowser
 
 
 class RenameWorkDirFile(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "write")
+
     async def process(self, input: Input, request: Request) -> Output:
         try:
             action = input.get("action", "rename")

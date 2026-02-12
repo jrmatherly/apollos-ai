@@ -4,6 +4,10 @@ from python.helpers.task_scheduler import TaskScheduler
 
 
 class Reset(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "write")
+
     async def process(self, input: Input, request: Request) -> Output:
         ctxid = input.get("context", "")
 

@@ -5,6 +5,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class SetSettings(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("settings", "write")
+
     async def process(
         self, input: dict[Any, Any], request: Request
     ) -> dict[Any, Any] | Response:

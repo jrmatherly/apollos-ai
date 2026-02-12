@@ -1,7 +1,7 @@
 [project]
 name = "apollos-ai"
 version = "0.2.0"
-description = "Personal organic agentic AI framework"
+description = "Personal relentlessly optimistic agentic AI framework"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12,<3.14"
@@ -67,6 +67,8 @@ dependencies = [
     "alembic>=1.14",
     "argon2-cffi>=25.1",
     "msal>=1.34.0",
+    "casbin>=1.43.0",
+    "casbin-sqlalchemy-adapter>=1.4.0",
 ]
 
 [dependency-groups]

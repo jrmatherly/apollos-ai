@@ -4,6 +4,10 @@ from python.helpers.tunnel_manager import TunnelManager
 
 
 class Tunnel(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("admin", "tunnel")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         return await process(input)
 

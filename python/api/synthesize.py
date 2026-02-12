@@ -5,6 +5,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class Synthesize(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         text = input.get("text", "")
         ctxid = input.get("ctxid", "")

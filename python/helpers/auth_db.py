@@ -60,6 +60,21 @@ def init_db(url: str | None = None) -> None:
     PrintStyle.info(f"Auth database initialized ({url.split('://')[0]} backend)")
 
 
+def get_engine() -> Engine:
+    """Return the auth database engine.
+
+    Used by the Casbin SQLAlchemy adapter to share the same database.
+
+    Raises:
+        RuntimeError: If :func:`init_db` has not been called yet.
+    """
+    if _engine is None:
+        raise RuntimeError(
+            "Auth database not initialized. Call init_db() before requesting the engine."
+        )
+    return _engine
+
+
 @contextmanager
 def get_session() -> Generator[Session, None, None]:
     """Context manager yielding a SQLAlchemy session.

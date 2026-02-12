@@ -13,6 +13,10 @@ class NotificationCreate(ApiHandler):
     def requires_auth(cls) -> bool:
         return True
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("notifications", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         # Extract notification data
         notification_type = input.get("type", NotificationType.INFO.value)

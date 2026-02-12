@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class LoadChats(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "read_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         chats = input.get("chats", [])
         if not chats:

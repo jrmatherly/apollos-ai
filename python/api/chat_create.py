@@ -4,6 +4,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class CreateChat(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "create")
+
     async def process(self, input: Input, request: Request) -> Output:
         current_ctxid = input.get("current_context", "")  # current context id
         new_ctxid = input.get("new_context", guids.generate_id())  # given or new guid

@@ -12,6 +12,10 @@ class ImageGet(ApiHandler):
     def get_methods(cls) -> list[str]:
         return ["GET"]
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "read_own")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         # input data
         path = input.get("path", request.args.get("path", ""))

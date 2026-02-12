@@ -7,6 +7,10 @@ from python.helpers.settings import set_settings_delta
 
 
 class McpServersApply(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("mcp", "write")
+
     async def process(
         self, input: dict[Any, Any], request: Request
     ) -> dict[Any, Any] | Response:

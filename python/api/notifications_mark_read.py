@@ -9,6 +9,10 @@ class NotificationsMarkRead(ApiHandler):
     def requires_auth(cls) -> bool:
         return True
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("notifications", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         notification_ids = input.get("notification_ids", [])
         mark_all = input.get("mark_all", False)

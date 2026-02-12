@@ -14,6 +14,10 @@ class EditWorkDirFile(ApiHandler):
     def get_methods(cls):
         return ["GET", "POST"]
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "write")
+
     def _extract_error_message(self, error_str: str) -> str:
         """Extract user-friendly error message from exception string."""
         for line in reversed(error_str.split("\n")):

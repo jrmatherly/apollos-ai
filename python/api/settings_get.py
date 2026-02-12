@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class GetSettings(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("settings", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         tenant_ctx = self._get_tenant_ctx()
         if not tenant_ctx.is_system:

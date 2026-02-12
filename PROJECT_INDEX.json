@@ -7,8 +7,9 @@
 		"server": "Flask + uvicorn + python-socketio",
 		"llm": "LiteLLM multi-provider via LangChain",
 		"memory": "FAISS + sentence-transformers",
+		"auth": "OIDC (Entra ID) + local Argon2id + RBAC (Casbin)",
 		"license": "MIT",
-		"generated": "2026-02-11",
+		"generated": "2026-02-12",
 		"github_remote": "jrmatherly/apollos-ai"
 	},
 	"entry_points": {
@@ -21,45 +22,51 @@
 		"prepare": "prepare.py"
 	},
 	"file_counts": {
-		"python_total": 265,
-		"api_handlers": 74,
+		"python_total": 282,
+		"api_handlers": 82,
 		"tools_active": 19,
-		"helpers": 83,
-		"extensions": 41,
+		"helpers": 92,
+		"extensions": 39,
+		"extension_hook_dirs": 24,
 		"websocket_handlers": 4,
-		"prompt_templates": 102,
-		"frontend_js": 59,
-		"frontend_html": 94,
-		"frontend_css": 19,
-		"tests": 28,
+		"prompt_templates": 107,
+		"frontend_components": 92,
+		"frontend_js": 21,
+		"frontend_css": 10,
+		"tests": 30,
 		"docs": 20,
 		"agent_profiles": 6,
-		"ci_workflows": 4,
-		"mise_tasks": 67,
+		"ci_workflows": 7,
+		"conf_files": 5,
+		"root_config_files": 10,
+		"mise_tasks": 70,
 		"drift_patterns": 14
 	},
 	"directories": {
-		"python/api": "74 REST endpoint handlers (ApiHandler subclasses)",
+		"python/api": "82 REST endpoint handlers (ApiHandler subclasses)",
 		"python/tools": "19 active tools (Tool subclasses)",
-		"python/helpers": "83 utility modules",
-		"python/extensions": "41 extensions across 26 lifecycle hooks",
+		"python/helpers": "92 utility modules",
+		"python/extensions": "39 extensions across 24 lifecycle hook directories",
 		"python/websocket_handlers": "4 namespace-based WebSocket handlers",
-		"prompts": "102 Markdown/Python prompt templates",
+		"prompts": "107 prompt templates (104 .md + 3 .py)",
 		"webui": "Alpine.js frontend (components, stores, vendor libs)",
-		"webui/components": "Alpine.js component stores + HTML templates",
-		"webui/js": "Core JS utilities (API, websocket, speech, etc.)",
+		"webui/components": "92 HTML component templates",
+		"webui/js": "21 JS modules",
+		"webui/css": "10 stylesheets",
 		"webui/vendor": "Third-party libs (Ace editor, Alpine, Socket.IO, KaTeX)",
 		"agents": "6 agent profile configurations",
 		"skills": "Skill definitions and templates",
 		"knowledge": "Knowledge base (main + solutions)",
-		"tests": "28 pytest test files",
+		"tests": "30 pytest test files",
 		"docker": "Docker build configuration (base + run stages)",
-		"docs": "20 documentation markdown files",
+		"docs": "Documentation (setup, guides, developer, reference)",
+		"conf": "Runtime config (model_providers, rbac_model, gitignore templates)",
+		"alembic": "Database migrations (SQLAlchemy + Alembic)",
 		".drift": "DriftDetect codebase analysis (patterns, indexes, views, audit)",
-		".github/workflows": "4 GitHub Actions workflows (ci, drift, release, hooks-check)"
+		".github/workflows": "7 GitHub Actions workflows"
 	},
 	"dev_tooling": {
-		"task_runner": "mise.toml (67 tasks)",
+		"task_runner": "mise.toml (70+ tasks)",
 		"git_hooks": "hk.pkl (pre-commit: ruff+biome+security, commit-msg: conventional)",
 		"changelog": "cliff.toml (git-cliff, conventional commits)",
 		"linting": "ruff (Python) + biome (CSS/JS)",
@@ -67,184 +74,138 @@
 		"ci_cd": {
 			"ci": ".github/workflows/ci.yml (lint + format + test, parallel)",
 			"drift": ".github/workflows/drift.yml (push/manual/weekly)",
-			"release": ".github/workflows/release.yml (git-cliff + gh-release on v* tags)",
-			"hooks_check": ".github/workflows/hooks-check.yml (hk validation on PRs)"
+			"release": ".github/workflows/release.yml (git-cliff + gh-release + docker on v* tags)",
+			"docker_base": ".github/workflows/docker-base.yml (base image on docker/base/** changes)",
+			"hooks_check": ".github/workflows/hooks-check.yml (hk validation on PRs)",
+			"codeql": ".github/workflows/codeql.yml (CodeQL security analysis, weekly)",
+			"dependency_review": ".github/workflows/dependency-review.yml (vulnerability + sync check)"
 		}
 	},
 	"tools": [
-		{
-			"name": "code_execution_tool",
-			"purpose": "Execute code in Docker sandbox (Python/Node.js/terminal)"
-		},
-		{
-			"name": "call_subordinate",
-			"purpose": "Spawn sub-agents for delegated tasks"
-		},
-		{
-			"name": "response",
-			"purpose": "Return final response to user (ends monologue loop)"
-		},
+		{ "name": "code_execution_tool", "purpose": "Execute code in Docker sandbox (Python/Node.js/terminal)" },
+		{ "name": "call_subordinate", "purpose": "Spawn sub-agents for delegated tasks" },
+		{ "name": "response", "purpose": "Return final response to user (ends monologue loop)" },
 		{ "name": "memory_save", "purpose": "Save to FAISS vector memory" },
 		{ "name": "memory_load", "purpose": "Query FAISS vector memory" },
 		{ "name": "memory_delete", "purpose": "Delete specific memories" },
 		{ "name": "memory_forget", "purpose": "Bulk forget by criteria" },
-		{
-			"name": "search_engine",
-			"purpose": "Web search (SearXNG/DuckDuckGo/Perplexity)"
-		},
-		{
-			"name": "browser_agent",
-			"purpose": "Browser automation (Playwright/browser-use)"
-		},
+		{ "name": "search_engine", "purpose": "Web search (SearXNG/DuckDuckGo/Perplexity)" },
+		{ "name": "browser_agent", "purpose": "Browser automation (Playwright/browser-use)" },
 		{ "name": "document_query", "purpose": "Query uploaded documents" },
 		{ "name": "input", "purpose": "Request user input mid-task" },
 		{ "name": "notify_user", "purpose": "Send push/email notifications" },
 		{ "name": "scheduler", "purpose": "Cron-based task scheduling" },
 		{ "name": "skills_tool", "purpose": "Execute installed skills" },
 		{ "name": "a2a_chat", "purpose": "Agent-to-agent communication" },
-		{
-			"name": "behaviour_adjustment",
-			"purpose": "Modify agent behavior dynamically"
-		},
+		{ "name": "behaviour_adjustment", "purpose": "Modify agent behavior dynamically" },
 		{ "name": "vision_load", "purpose": "Load images for vision analysis" },
 		{ "name": "wait", "purpose": "Pause execution" },
 		{ "name": "unknown", "purpose": "Fallback for unrecognized tool calls" }
 	],
 	"api_groups": {
-		"chat": [
-			"message",
-			"message_async",
-			"chat_create",
-			"chat_load",
-			"chat_reset",
-			"chat_remove",
-			"chat_export"
-		],
-		"settings": ["settings_get", "settings_set"],
+		"chat": ["message", "message_async", "chat_create", "chat_load", "chat_reset", "chat_remove", "chat_export"],
+		"settings": ["settings_get", "settings_set", "settings_workdir_file_structure"],
 		"memory": ["memory_dashboard"],
-		"files": [
-			"get_work_dir_files",
-			"upload_work_dir_files",
-			"edit_work_dir_file",
-			"delete_work_dir_file",
-			"download_work_dir_file"
-		],
-		"mcp": [
-			"mcp_servers_status",
-			"mcp_servers_apply",
-			"mcp_server_get_detail",
-			"mcp_server_get_log"
-		],
-		"scheduler": [
-			"scheduler_tasks_list",
-			"scheduler_task_create",
-			"scheduler_task_update",
-			"scheduler_task_delete",
-			"scheduler_task_run",
-			"scheduler_tick"
-		],
-		"backup": [
-			"backup_create",
-			"backup_restore",
-			"backup_inspect",
-			"backup_test",
-			"backup_preview_grouped",
-			"backup_restore_preview",
-			"backup_get_defaults"
-		],
-		"knowledge": [
-			"knowledge_reindex",
-			"knowledge_path_get",
-			"import_knowledge"
-		],
+		"files": ["get_work_dir_files", "upload_work_dir_files", "edit_work_dir_file", "delete_work_dir_file", "download_work_dir_file", "rename_work_dir_file", "file_info"],
+		"mcp": ["mcp_servers_status", "mcp_servers_apply", "mcp_server_get_detail", "mcp_server_get_log"],
+		"scheduler": ["scheduler_tasks_list", "scheduler_task_create", "scheduler_task_update", "scheduler_task_delete", "scheduler_task_run", "scheduler_tick"],
+		"backup": ["backup_create", "backup_restore", "backup_inspect", "backup_test", "backup_preview_grouped", "backup_restore_preview", "backup_get_defaults"],
+		"knowledge": ["knowledge_reindex", "knowledge_path_get", "import_knowledge"],
 		"skills": ["skills", "skills_import", "skills_import_preview"],
-		"notifications": [
-			"notification_create",
-			"notifications_history",
-			"notifications_mark_read",
-			"notifications_clear"
-		],
+		"notifications": ["notification_create", "notifications_history", "notifications_mark_read", "notifications_clear"],
 		"auth": ["csrf_token", "logout"],
-		"system": [
-			"health",
-			"poll",
-			"restart",
-			"nudge",
-			"pause",
-			"rfc",
-			"banners",
-			"agents",
-			"subagents"
-		]
+		"system": ["health", "poll", "restart", "nudge", "pause", "rfc", "banners", "agents", "subagents", "projects"],
+		"media": ["synthesize", "transcribe", "image_get"],
+		"tunnel": ["tunnel", "tunnel_proxy"],
+		"upload": ["upload", "upload_work_dir_files"],
+		"context": ["ctx_window_get", "history_get"],
+		"queue": ["message_queue_add", "message_queue_remove", "message_queue_send"],
+		"branding": ["branding_get"],
+		"api_compat": ["api_message", "api_reset_chat", "api_terminate_chat", "api_files_get", "api_log_get"]
 	},
-	"extension_hooks": [
-		"agent_init",
-		"message_loop_start",
-		"message_loop_prompts_before",
-		"message_loop_prompts_after",
-		"monologue_start",
-		"system_prompt",
-		"before_main_llm_call",
-		"reasoning_stream",
-		"reasoning_stream_chunk",
-		"reasoning_stream_end",
-		"response_stream",
-		"response_stream_chunk",
-		"response_stream_end",
-		"tool_execute_before",
-		"tool_execute_after",
-		"hist_add_before",
-		"hist_add_tool_result",
-		"monologue_end",
-		"message_loop_end",
-		"process_chain_end",
-		"user_message_ui",
-		"banners",
-		"error_format",
-		"util_model_call_before"
-	],
+	"extension_hooks": {
+		"agent_init": ["_10_initial_message", "_15_load_profile_settings"],
+		"banners": ["_10_unsecured_connection", "_20_missing_api_key", "_30_system_resources"],
+		"before_main_llm_call": ["_10_log_for_stream"],
+		"error_format": ["_10_mask_errors"],
+		"hist_add_before": ["_10_mask_content"],
+		"hist_add_tool_result": ["_90_save_tool_call_file"],
+		"message_loop_end": ["_10_organize_history", "_90_save_chat"],
+		"message_loop_prompts_after": ["_50_recall_memories", "_60_include_current_datetime", "_65_include_loaded_skills", "_70_include_agent_info", "_75_include_workdir_extras", "_91_recall_wait"],
+		"message_loop_prompts_before": ["_90_organize_history_wait"],
+		"message_loop_start": ["_10_iteration_no"],
+		"monologue_end": ["_50_memorize_fragments", "_51_memorize_solutions", "_90_waiting_for_input_msg"],
+		"monologue_start": ["_10_memory_init", "_60_rename_chat"],
+		"process_chain_end": ["_50_process_queue"],
+		"reasoning_stream": ["_10_log_from_stream"],
+		"reasoning_stream_chunk": ["_10_mask_stream"],
+		"reasoning_stream_end": ["_10_mask_end"],
+		"response_stream": ["_10_log_from_stream", "_15_replace_include_alias", "_20_live_response"],
+		"response_stream_chunk": ["_10_mask_stream"],
+		"response_stream_end": ["_10_mask_end", "_15_log_from_stream_end"],
+		"system_prompt": ["_10_system_prompt", "_20_behaviour_prompt"],
+		"tool_execute_after": ["_10_mask_secrets"],
+		"tool_execute_before": ["_10_replace_last_tool_output", "_10_unmask_secrets"],
+		"user_message_ui": ["_10_update_check"],
+		"util_model_call_before": ["_10_mask_secrets"]
+	},
 	"key_helpers": {
-		"llm": ["call_llm", "rate_limiter", "tokens", "providers"],
-		"memory": ["memory", "vector_db", "memory_consolidation"],
-		"execution": ["process", "shell_local", "shell_ssh", "docker", "runtime"],
-		"web": [
-			"api",
-			"websocket",
-			"websocket_manager",
-			"websocket_namespace_discovery"
-		],
-		"browser": [
-			"browser",
-			"browser_use",
-			"playwright",
-			"browser_use_monkeypatch"
-		],
-		"files": ["files", "file_browser", "file_tree"],
-		"security": ["security", "secrets", "crypto", "login"],
-		"state": ["context", "history", "messages", "persist_chat", "settings"],
-		"mcp": ["mcp_handler", "mcp_server"],
-		"other": [
-			"notification",
-			"task_scheduler",
-			"skills",
-			"projects",
-			"backup",
-			"git"
-		]
+		"auth_security": ["auth", "auth_bootstrap", "auth_db", "rbac", "security", "user_store", "vault_crypto", "crypto", "secrets", "login"],
+		"data_storage": ["backup", "files", "file_browser", "file_tree", "history", "memory", "memory_consolidation", "multiuser_migration", "persist_chat", "vector_db", "state_snapshot"],
+		"agent_core": ["call_llm", "context", "defer", "extension", "extract_tools", "job_loop", "messages", "projects", "runtime", "settings", "subagents", "tenant", "tool", "tokens", "wait"],
+		"browser_automation": ["browser", "browser_use", "browser_use_monkeypatch", "playwright", "docker", "process"],
+		"communication": ["websocket", "websocket_manager", "websocket_namespace_discovery", "notification", "print_catch", "print_style", "timed_input", "tty_session", "tunnel_manager", "email_client", "fasta2a_client", "fasta2a_server"],
+		"search_knowledge": ["document_query", "duckduckgo_search", "knowledge_import", "perplexity_search", "searxng", "rfc", "rfc_exchange", "rfc_files"],
+		"skills_tasks": ["skills", "skills_cli", "skills_import", "task_scheduler", "mcp_handler", "mcp_server", "message_queue"],
+		"utilities": ["attachment_manager", "branding", "dirty_json", "dotenv", "errors", "faiss_monkey_patch", "git", "guids", "images", "localization", "log", "migration", "providers", "rate_limiter", "shell_local", "shell_ssh", "strings", "update_check"],
+		"state": ["state_monitor", "state_monitor_integration", "state_snapshot"],
+		"media": ["kokoro_tts", "whisper"]
+	},
+	"auth_system": {
+		"phase_0": {
+			"name": "Foundation",
+			"modules": ["auth_db", "user_store", "vault_crypto", "auth_bootstrap"],
+			"features": ["SQLAlchemy engine", "ORM + CRUD", "AES-256-GCM vault", "Alembic migrations", "Admin bootstrap"]
+		},
+		"phase_1": {
+			"name": "OIDC + Local Login",
+			"modules": ["auth"],
+			"features": ["MSAL OIDC (Entra ID)", "Argon2id passwords", "Legacy AUTH_LOGIN compat", "Session management"],
+			"routes": ["/login", "/login/entra", "/auth/callback", "/logout"]
+		},
+		"phase_2": {
+			"name": "User Isolation",
+			"modules": ["tenant", "multiuser_migration"],
+			"features": ["TenantContext multi-user scoping", "Data directory restructuring"]
+		},
+		"phase_3": {
+			"name": "RBAC Authorization",
+			"modules": ["rbac"],
+			"config": "conf/rbac_model.conf",
+			"features": ["Casbin RBAC model", "Role-based access control"]
+		}
+	},
+	"branding": {
+		"module": "python/helpers/branding.py",
+		"api_endpoint": "/branding_get",
+		"frontend_store": "webui/js/branding-store.js",
+		"env_vars": ["BRAND_NAME", "BRAND_SLUG", "BRAND_URL", "BRAND_GITHUB_URL", "BRAND_UPDATE_CHECK_URL"],
+		"prompt_variable": "{{brand_name}}"
+	},
+	"docker": {
+		"images": {
+			"base": { "dockerfile": "docker/base/Dockerfile", "registry": "ghcr.io/jrmatherly/apollos-ai-base" },
+			"app": { "dockerfile": "docker/run/Dockerfile", "registry": "ghcr.io/jrmatherly/apollos-ai" },
+			"local": { "dockerfile": "DockerfileLocal", "registry": null }
+		}
 	},
 	"dependencies": {
 		"flask[async]": { "version": "3.0.3", "purpose": "Web framework" },
 		"uvicorn": { "version": ">=0.38.0", "purpose": "ASGI server" },
-		"python-socketio": {
-			"version": ">=5.14.2",
-			"purpose": "WebSocket support"
-		},
+		"python-socketio": { "version": ">=5.14.2", "purpose": "WebSocket support" },
 		"langchain-core": { "version": "0.3.49", "purpose": "LLM abstractions" },
 		"faiss-cpu": { "version": "1.11.0", "purpose": "Vector similarity search" },
-		"sentence-transformers": {
-			"version": "3.0.1",
-			"purpose": "Text embeddings"
-		},
+		"sentence-transformers": { "version": "3.0.1", "purpose": "Text embeddings" },
 		"fastmcp": { "version": "2.13.1", "purpose": "MCP server" },
 		"fasta2a": { "version": "0.5.0", "purpose": "Agent-to-Agent protocol" },
 		"browser-use": { "version": "0.5.11", "purpose": "Browser automation" },
@@ -253,19 +214,28 @@
 		"pydantic": { "version": "2.11.7", "purpose": "Data validation" },
 		"duckduckgo-search": { "version": "6.1.12", "purpose": "Web search" },
 		"openai-whisper": { "version": "20250625", "purpose": "Speech-to-text" },
-		"kokoro": { "version": ">=0.9.2", "purpose": "Text-to-speech" }
+		"kokoro": { "version": ">=0.9.2", "purpose": "Text-to-speech" },
+		"sqlalchemy": { "version": ">=2.0", "purpose": "Auth database ORM" },
+		"msal": { "purpose": "Microsoft Auth Library (OIDC)" },
+		"argon2-cffi": { "purpose": "Password hashing" },
+		"casbin": { "purpose": "RBAC authorization" }
 	},
 	"agent_profiles": [
-		{
-			"name": "default",
-			"description": "Base agent with standard capabilities"
-		},
+		{ "name": "default", "description": "Base agent with standard capabilities" },
 		{ "name": "apollos", "description": "Core Apollos AI personality" },
 		{ "name": "developer", "description": "Software development focused" },
 		{ "name": "hacker", "description": "Security/hacking oriented" },
 		{ "name": "researcher", "description": "Research and analysis focused" },
 		{ "name": "_example", "description": "Template for custom profiles" }
 	],
+	"tests": {
+		"auth_security": ["test_auth_phase0", "test_auth_phase1", "test_phase2_user_isolation", "test_phase3_authorization", "test_security", "test_http_auth_csrf", "test_websocket_csrf", "test_websocket_namespace_security"],
+		"websocket": ["test_websocket_manager", "test_websocket_handlers", "test_websocket_namespaces", "test_websocket_api_integration", "test_websocket_disconnect", "test_websocket_namespace_discovery", "test_websocket_state_sync", "websocket_namespace_test_utils"],
+		"features": ["test_branding", "test_multi_tab_isolation", "test_state_monitor", "test_state_sync", "test_state_snapshot", "test_persist_chat_log_ids", "test_developer_sections"],
+		"config": ["test_run_ui_config"],
+		"utilities": ["chunk_parser_test", "email_parser_test", "test_fasta2a_client", "test_file_tree_visualize"],
+		"manual": ["rate_limiter_manual", "test_rate_limiter"]
+	},
 	"conventions": {
 		"functions": "snake_case",
 		"classes": "PascalCase",

@@ -9,6 +9,10 @@ from python.helpers.security import safe_filename
 
 
 class Message(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         task, context = await self.communicate(input=input, request=request)
         return await self.respond(task, context)

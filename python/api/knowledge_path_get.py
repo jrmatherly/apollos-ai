@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class GetKnowledgePath(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("knowledge", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         ctxid = input.get("ctxid", "")
         if not ctxid:

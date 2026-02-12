@@ -9,6 +9,10 @@ class NotificationsHistory(ApiHandler):
     def requires_auth(cls) -> bool:
         return True
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("notifications", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         # Get the global notification manager
         notification_manager = AgentContext.get_notification_manager()

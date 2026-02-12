@@ -92,4 +92,21 @@ def bootstrap() -> None:
     # Seed defaults
     _seed_defaults()
 
+    # Initialize RBAC enforcer and seed default policies
+    try:
+        from python.helpers import rbac
+
+        rbac.init_enforcer()
+        rbac.seed_default_policies()
+
+        # Sync admin user roles if admin exists
+        admin_email = os.environ.get("ADMIN_EMAIL")
+        if admin_email:
+            with auth_db.get_session() as db:
+                admin = user_store.get_user_by_email(db, admin_email)
+                if admin:
+                    rbac.sync_user_roles(admin.id)
+    except Exception as e:
+        PrintStyle.warning(f"RBAC initialization skipped: {e}")
+
     PrintStyle.info("Auth bootstrap: complete.")

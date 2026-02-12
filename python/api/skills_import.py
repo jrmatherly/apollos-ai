@@ -18,6 +18,10 @@ class SkillsImport(ApiHandler):
     Performs the actual import (not dry-run).
     """
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("skills", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         if "skills_file" not in request.files:
             return {"success": False, "error": "No skills file provided"}

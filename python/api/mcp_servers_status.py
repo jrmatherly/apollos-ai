@@ -5,6 +5,10 @@ from python.helpers.mcp_handler import MCPConfig
 
 
 class McpServersStatuss(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("mcp", "read")
+
     async def process(
         self, input: dict[Any, Any], request: Request
     ) -> dict[Any, Any] | Response:
