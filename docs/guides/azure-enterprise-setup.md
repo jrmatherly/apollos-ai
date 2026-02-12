@@ -159,7 +159,23 @@ This requires the `GroupMember.Read.All` permission and a valid access token.
 
 ### Step 8: Configure Group Mappings in Apollos AI
 
-After EntraID is configured, map EntraID security groups to local orgs/teams via the admin API:
+After EntraID is configured, map EntraID security groups to local orgs/teams.
+
+#### Option A: Environment Variable Bootstrap (Recommended)
+
+For automated deployments, define group mappings in `usr/.env`. They are seeded automatically at every startup:
+
+```bash
+# Format: entra_group_id:org_slug:team_slug:role (semicolon-separated)
+# Get group Object IDs from Azure Portal > Entra ID > Groups > [Group] > Object Id
+A0_SET_SSO_GROUP_MAPPINGS="<ENTRA-GROUP-ID-1>:default:default:member;<ENTRA-GROUP-ID-2>:default:default:team_lead"
+```
+
+Mappings are idempotent — safe for repeated startup. See [Environment Variables](../reference/environment-variables.md#sso-group-mapping-bootstrap) for full format documentation and available roles.
+
+#### Option B: Admin API (Manual)
+
+For interactive configuration or managing mappings after initial deployment, use the admin API:
 
 ```bash
 # 1. Get EntraID Group Object IDs from Azure Portal

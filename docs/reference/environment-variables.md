@@ -81,6 +81,35 @@ Controls automatic membership provisioning for JIT-provisioned SSO users who don
 
 When enabled (default), SSO users immediately have access after authenticating. When disabled, SSO users receive 403 until an admin assigns them via the admin API or EntraID group mappings are configured.
 
+### SSO Group Mapping Bootstrap
+
+Seed EntraID group-to-org/team mappings at startup via environment variable, eliminating the need for manual admin API calls. Mappings are upserted (created or updated) on every startup, making this safe for repeated runs.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `A0_SET_SSO_GROUP_MAPPINGS` | Semicolon-delimited EntraID group mapping definitions | See format below | _(empty)_ | No |
+
+**Format:** `entra_group_id:org_slug:team_slug:role` entries separated by semicolons.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `entra_group_id` | Yes | Azure AD security group Object ID (GUID from Azure Portal) |
+| `org_slug` | Yes | Organization slug to map to (e.g., `default`) |
+| `team_slug` | No | Team slug within the org (empty = org-level mapping only) |
+| `role` | No | Role to assign: `owner`, `admin`, `lead`, `member` (default), `viewer` |
+
+**Example:**
+
+```bash
+# Map two Azure AD groups to the default org/team with different roles
+A0_SET_SSO_GROUP_MAPPINGS="e1a2b3c4-...:default:default:member;f5d6e7a8-...:default:default:team_lead"
+
+# Org-level mapping only (no team assignment)
+A0_SET_SSO_GROUP_MAPPINGS="a9b0c1d2-...:default::org_admin"
+```
+
+> **Note:** Orgs and teams referenced by slug must already exist (created via admin API or the default bootstrap). Invalid entries (unknown slugs, malformed format) are logged as warnings and skipped without blocking startup. Mappings defined here are additive — they do not remove mappings configured via the admin API.
+
 ### EntraID Group-Based Role Assignment
 
 For production deployments, you can map EntraID security groups to local org/team memberships with specific roles. This gives fine-grained control over who gets what access level — different Azure groups can map to different roles (owner, admin, member, viewer).
