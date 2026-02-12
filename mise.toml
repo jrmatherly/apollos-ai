@@ -252,6 +252,87 @@ run = "git-cliff --unreleased"
 description = "Bump version based on conventional commits"
 run = "git-cliff --bump --output CHANGELOG.md"
 
+[tasks.release]
+description = "Create a release: bump version, changelog, commit, tag, push (usage: mise run release [version])"
+usage = 'arg "[version]" help="Version to release (e.g. 0.2.1). Omit for auto-bump via conventional commits."'
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── Determine version ───────────────────────────────────────────────
+CURRENT=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+echo "Current version: ${CURRENT}"
+
+if [ -n "${usage_version:-}" ]; then
+  NEW_VERSION="${usage_version}"
+  # Strip leading 'v' if provided (e.g. v0.2.1 -> 0.2.1)
+  NEW_VERSION="${NEW_VERSION#v}"
+else
+  # Auto-determine next version from conventional commits
+  NEW_VERSION=$(git-cliff --bumped-version 2>/dev/null | sed 's/^v//')
+  if [ -z "$NEW_VERSION" ] || [ "$NEW_VERSION" = "$CURRENT" ]; then
+    echo "Error: No version bump detected from commits. Specify a version explicitly."
+    exit 1
+  fi
+fi
+TAG="v${NEW_VERSION}"
+
+echo "New version: ${NEW_VERSION} (tag: ${TAG})"
+
+# ─── Guard: tag must not exist ────────────────────────────────────────
+if git rev-parse "${TAG}" >/dev/null 2>&1; then
+  echo "Error: Tag ${TAG} already exists."
+  exit 1
+fi
+
+# ─── Guard: working tree must be clean ────────────────────────────────
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Error: Working tree is not clean. Commit or stash changes first."
+  exit 1
+fi
+
+# ─── Confirm ──────────────────────────────────────────────────────────
+echo ""
+echo "This will:"
+echo "  1. Update pyproject.toml version to ${NEW_VERSION}"
+echo "  2. Generate CHANGELOG.md for ${TAG}"
+echo "  3. Commit: \"chore(release): ${TAG}\""
+echo "  4. Create git tag ${TAG}"
+echo "  5. Push commit + tag to origin (triggers CI release + Docker build)"
+echo ""
+read -rp "Proceed? [y/N] " confirm
+if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
+# ─── 1. Bump version in pyproject.toml ────────────────────────────────
+sed -i.bak "s/^version = \"${CURRENT}\"/version = \"${NEW_VERSION}\"/" pyproject.toml
+rm -f pyproject.toml.bak
+echo "✓ pyproject.toml → ${NEW_VERSION}"
+
+# ─── 2. Generate changelog ────────────────────────────────────────────
+git-cliff --tag "${TAG}" --output CHANGELOG.md
+echo "✓ CHANGELOG.md updated"
+
+# ─── 3. Commit ────────────────────────────────────────────────────────
+git add pyproject.toml CHANGELOG.md
+git commit -m "chore(release): ${TAG}"
+echo "✓ Committed"
+
+# ─── 4. Tag ───────────────────────────────────────────────────────────
+git tag -a "${TAG}" -m "Release ${TAG}"
+echo "✓ Tagged ${TAG}"
+
+# ─── 5. Push ──────────────────────────────────────────────────────────
+git push origin main "${TAG}"
+echo "✓ Pushed to origin"
+
+echo ""
+echo "Release ${TAG} is live. CI will create the GitHub Release and Docker image."
+echo "  → https://github.com/jrmatherly/apollos-ai/actions"
+'''
+
 # ============================================================================
 # Drift — Codebase Pattern Analysis & Institutional Memory
 # ============================================================================
