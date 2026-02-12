@@ -1,11 +1,14 @@
 import contextvars
 import os
 import threading
+import time
 from typing import Annotated, Literal, Union
 from urllib.parse import urlparse
 
 import fastmcp
 from fastmcp import FastMCP
+from fastmcp.server.auth import AuthContext
+from fastmcp.server.dependencies import get_access_token
 from fastmcp.server.http import (  # type: ignore
     build_resource_metadata_url,
     create_base_app,
@@ -33,6 +36,168 @@ _mcp_project_name: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "mcp_project_name", default=None
 )
 
+# ---------------------------------------------------------------------------
+# MCP Azure auth configuration
+# ---------------------------------------------------------------------------
+
+_azure_auth_configured: bool = False
+
+
+def _parse_redirect_uris() -> list[str] | None:
+    """Parse comma-separated redirect URIs from env."""
+    raw = os.environ.get("MCP_AZURE_REDIRECT_URIS", "")
+    if not raw.strip():
+        return None
+    return [u.strip() for u in raw.split(",") if u.strip()]
+
+
+def configure_mcp_auth() -> None:
+    """Conditionally attach AzureProvider to the MCP server.
+
+    Reads ``MCP_AZURE_CLIENT_ID``, ``MCP_AZURE_CLIENT_SECRET``, and
+    ``MCP_AZURE_TENANT_ID`` from the environment.  If all three are present,
+    creates an :class:`AzureProvider` and assigns it to ``mcp_server.auth``.
+    Otherwise, ``mcp_server.auth`` stays ``None`` and token-in-path
+    authentication continues working as-is.
+    """
+    global _azure_auth_configured  # noqa: PLW0603
+
+    client_id = os.environ.get("MCP_AZURE_CLIENT_ID", "")
+    client_secret = os.environ.get("MCP_AZURE_CLIENT_SECRET", "")
+    tenant_id = os.environ.get("MCP_AZURE_TENANT_ID", "")
+
+    if not (client_id and client_secret and tenant_id):
+        _PRINTER.print("[MCP] Azure auth not configured — token-in-path only")
+        return
+
+    from fastmcp.server.auth.providers.azure import AzureProvider
+
+    identifier_uri = os.environ.get("MCP_AZURE_IDENTIFIER_URI") or f"api://{client_id}"
+    base_url = os.environ.get("MCP_SERVER_BASE_URL", "http://localhost:50080")
+
+    auth = AzureProvider(
+        client_id=client_id,
+        client_secret=client_secret,
+        tenant_id=tenant_id,
+        base_url=base_url,
+        identifier_uri=identifier_uri,
+        required_scopes=["discover", "tools.read", "tools.execute", "chat"],
+        allowed_client_redirect_uris=_parse_redirect_uris(),
+        jwt_signing_key=os.environ.get("MCP_AZURE_JWT_SIGNING_KEY"),
+    )
+    mcp_server.auth = auth
+    _azure_auth_configured = True
+    _PRINTER.print("[MCP] Azure OAuth auth configured via AzureProvider")
+
+
+# ---------------------------------------------------------------------------
+# Per-tool scope enforcement (coexists with token-in-path)
+# ---------------------------------------------------------------------------
+
+
+def require_scopes_or_token_path(*scopes: str):
+    """Allow access if Bearer token has scopes OR if using token-in-path auth.
+
+    When ``mcp_server.auth`` is configured, requests arriving via the
+    token-in-path route will NOT carry a Bearer token.  In that case we
+    allow access unconditionally (the token already proved authorization).
+    For Bearer-authenticated requests we enforce the given scopes.
+    """
+
+    def check(ctx: AuthContext) -> bool:
+        if ctx.token is None:
+            return True  # token-in-path mode — no scope enforcement
+        return all(s in ctx.token.scopes for s in scopes)
+
+    return check
+
+
+# ---------------------------------------------------------------------------
+# User identity helpers
+# ---------------------------------------------------------------------------
+
+
+async def _get_mcp_user() -> dict | None:
+    """Get authenticated MCP user from Bearer token claims.
+
+    Returns ``None`` when the request is using token-in-path auth
+    (no Bearer token present).
+    """
+    token = get_access_token()
+    if token is None:
+        return None
+    return {
+        "id": token.claims.get("oid"),
+        "email": token.claims.get("preferred_username"),
+        "name": token.claims.get("name"),
+        "scopes": list(token.scopes),
+        "client_id": token.client_id,
+    }
+
+
+# ---------------------------------------------------------------------------
+# RBAC auth check for MCP requests
+# ---------------------------------------------------------------------------
+
+
+def require_rbac_mcp_access(ctx: AuthContext) -> bool:
+    """Custom auth check: verify Casbin allows MCP access for this user.
+
+    Passes unconditionally for token-in-path requests (no Bearer token).
+    For Bearer-authenticated requests, looks up the user in the auth DB
+    and checks Casbin RBAC policies.
+    """
+    if ctx.token is None:
+        return True  # token-in-path mode
+
+    user_id = ctx.token.claims.get("oid")
+    if not user_id:
+        return False
+
+    try:
+        from python.helpers import auth_db, user_store
+        from python.helpers.rbac import get_enforcer
+
+        with auth_db.get_session() as db:
+            user = user_store.get_user_by_id(db, user_id)
+            if not user:
+                return False
+            org_id = user.primary_org_id or "*"
+            # Find first team membership for domain construction
+            team_id = "*"
+            if user.team_memberships:
+                team_id = user.team_memberships[0].team_id
+            domain = f"org:{org_id}/team:{team_id}"
+            return get_enforcer().enforce(user_id, domain, "mcp", "execute")
+    except Exception as e:
+        _PRINTER.print(f"[MCP] RBAC check failed: {e}")
+        return False
+
+
+# ---------------------------------------------------------------------------
+# MCP rate limiting (per-user, in-memory)
+# ---------------------------------------------------------------------------
+
+_mcp_rate_limits: dict[str, list[float]] = {}
+_MCP_RATE_LIMIT = 100  # requests per minute
+_MCP_RATE_WINDOW = 60  # seconds
+
+
+def _check_mcp_rate_limit(user_id: str) -> bool:
+    """Return True if the user is within rate limits, False if exceeded."""
+    now = time.monotonic()
+    cutoff = now - _MCP_RATE_WINDOW
+    attempts = _mcp_rate_limits.get(user_id, [])
+    attempts = [t for t in attempts if t > cutoff]
+    attempts.append(now)
+    _mcp_rate_limits[user_id] = attempts
+    return len(attempts) <= _MCP_RATE_LIMIT
+
+
+# ---------------------------------------------------------------------------
+# MCP Server instance
+# ---------------------------------------------------------------------------
+
 mcp_server: FastMCP = FastMCP(
     name=f"{branding.BRAND_NAME} integrated MCP Server",
     instructions=f"""
@@ -42,6 +207,9 @@ mcp_server: FastMCP = FastMCP(
     {branding.BRAND_NAME}'s environment is isolated unless configured otherwise.
     """,
 )
+
+# Configure Azure auth if env vars are set (must happen after mcp_server creation)
+configure_mcp_auth()
 
 
 class ToolResponse(BaseModel):
@@ -94,6 +262,7 @@ This tool is used to send a message to the remote {branding.BRAND_NAME} Instance
         "openWorldHint": False,
         "title": SEND_MESSAGE_DESCRIPTION,
     },
+    auth=require_scopes_or_token_path("chat"),
 )
 async def send_message(
     message: Annotated[
@@ -142,6 +311,22 @@ async def send_message(
 ]:
     # Get project name from context variable (set in proxy __call__)
     project_name = _mcp_project_name.get()
+
+    # Get authenticated user identity (None for token-in-path)
+    mcp_user = await _get_mcp_user()
+
+    # Audit log the tool invocation
+    try:
+        from python.helpers.audit import create_audit_entry
+
+        await create_audit_entry(
+            user_id=mcp_user["id"] if mcp_user else None,
+            action="mcp_tool_invoke",
+            resource="send_message",
+            details={"chat_id": chat_id, "project": project_name},
+        )
+    except Exception:
+        pass  # audit is fire-and-forget
 
     context: AgentContext | None = None
     if chat_id:
@@ -224,6 +409,7 @@ Always use this tool to finish persistent chat conversations with remote {brandi
         "openWorldHint": False,
         "title": FINISH_CHAT_DESCRIPTION,
     },
+    auth=require_scopes_or_token_path("chat"),
 )
 async def finish_chat(
     chat_id: Annotated[
@@ -242,6 +428,20 @@ async def finish_chat(
 ]:
     if not chat_id:
         return ToolError(error="Chat ID is required", chat_id="")
+
+    # Audit log
+    try:
+        mcp_user = await _get_mcp_user()
+        from python.helpers.audit import create_audit_entry
+
+        await create_audit_entry(
+            user_id=mcp_user["id"] if mcp_user else None,
+            action="mcp_tool_invoke",
+            resource="finish_chat",
+            details={"chat_id": chat_id},
+        )
+    except Exception:
+        pass
 
     context = AgentContext.get(chat_id)
     if not context:
@@ -489,12 +689,28 @@ class DynamicMcpProxy:
         elif has_token and "/http" in path:
             # Route to HTTP app with cleaned path
             await http_app(modified_scope, receive, send)
+        elif not has_token and mcp_server.auth is not None and "/http" in path:
+            # Bearer token fallback: OAuth-authenticated clients connect at
+            # /mcp/http without a token-in-path.  Route to http_app which
+            # has RequireAuthMiddleware that validates Bearer tokens.
+            # Rewrite path so the underlying app finds its expected route.
+            bearer_scope = dict(scope)
+            bearer_scope["path"] = f"/t-{self.token}/http"
+            await http_app(bearer_scope, receive, send)
+        elif (
+            not has_token
+            and mcp_server.auth is not None
+            and (path.startswith("/auth/") or path.startswith("/.well-known/"))
+        ):
+            # OAuth routes (callback, PRM) — pass through to http_app
+            bearer_scope = dict(scope)
+            await http_app(bearer_scope, receive, send)
         else:
             raise StarletteHTTPException(status_code=403, detail="MCP forbidden")
 
 
 async def mcp_middleware(request: Request, call_next):
-    """Middleware to check if MCP server is enabled."""
+    """Middleware to check if MCP server is enabled and enforce rate limits."""
     # check if MCP server is enabled
     cfg = settings.get_settings()
     if not cfg["mcp_server_enabled"]:
@@ -502,5 +718,19 @@ async def mcp_middleware(request: Request, call_next):
         raise StarletteHTTPException(
             status_code=403, detail="MCP server is disabled in settings."
         )
+
+    # Per-user rate limiting for Bearer-authenticated requests
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer ") and _azure_auth_configured:
+        # Extract user_id from token claims (lightweight check via get_access_token
+        # happens later; here we just key by the first 16 chars of token hash)
+        import hashlib
+
+        token_key = hashlib.sha256(auth_header.encode()).hexdigest()[:16]
+        if not _check_mcp_rate_limit(token_key):
+            raise StarletteHTTPException(
+                status_code=429,
+                detail="Rate limit exceeded. Max 100 requests per minute.",
+            )
 
     return await call_next(request)

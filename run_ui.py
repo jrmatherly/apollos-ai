@@ -270,18 +270,56 @@ def csrf_protect(f):
 
 
 @webapp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10/minute")
 async def login_handler():
+    from python.helpers.login_protection import login_protection
+
     error = None
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
+
+        # Check brute force lockout
+        if login_protection.check_locked(username):
+            remaining = login_protection.lockout_remaining(username)
+            resp = Response("Too many failed attempts. Please try again later.", 429)
+            resp.headers["Retry-After"] = str(int(remaining) + 1)
+
+            # Audit log the lockout
+            try:
+                from python.helpers.audit import create_audit_entry
+
+                await create_audit_entry(
+                    user_id=None,
+                    action="login_locked",
+                    resource="/login",
+                    details={"username": username},
+                    ip=request.remote_addr,
+                )
+            except Exception:
+                pass
+            return resp
 
         # Try new multi-user auth (local accounts in auth.db)
         try:
             auth_mgr = get_auth_manager()
             userinfo = auth_mgr.login_local(username, password)
             if userinfo:
+                login_protection.record_success(username)
                 auth_mgr.establish_session(userinfo)
+                # Audit log success
+                try:
+                    from python.helpers.audit import create_audit_entry
+
+                    await create_audit_entry(
+                        user_id=userinfo.get("id"),
+                        action="login",
+                        resource="/login",
+                        details={"method": "local"},
+                        ip=request.remote_addr,
+                    )
+                except Exception:
+                    pass
                 return redirect(url_for("serve_index"))
         except RuntimeError:
             pass  # AuthManager not initialized — fall through to legacy
@@ -290,10 +328,41 @@ async def login_handler():
         legacy_user = dotenv.get_dotenv_value("AUTH_LOGIN")
         legacy_pass = dotenv.get_dotenv_value("AUTH_PASSWORD")
         if legacy_user and username == legacy_user and password == legacy_pass:
+            login_protection.record_success(username)
             session["authentication"] = login.get_credentials_hash()
+            # Audit log legacy success
+            try:
+                from python.helpers.audit import create_audit_entry
+
+                await create_audit_entry(
+                    user_id=None,
+                    action="login",
+                    resource="/login",
+                    details={"method": "legacy"},
+                    ip=request.remote_addr,
+                )
+            except Exception:
+                pass
             return redirect(url_for("serve_index"))
 
-        await asyncio.sleep(1)
+        # Failed login
+        delay = login_protection.record_failure(username)
+        await asyncio.sleep(delay)
+
+        # Audit log failure
+        try:
+            from python.helpers.audit import create_audit_entry
+
+            await create_audit_entry(
+                user_id=None,
+                action="login_failed",
+                resource="/login",
+                details={"username": username},
+                ip=request.remote_addr,
+            )
+        except Exception:
+            pass
+
         error = "Invalid credentials. Please try again."
 
     # Determine if OIDC SSO button should be shown
