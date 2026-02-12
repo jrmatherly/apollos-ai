@@ -1,0 +1,6 @@
+name: "CodeQL Configuration"
+
+paths-ignore:
+  - tests
+  - "**/*test*"
+  - "**/*_test.py"
