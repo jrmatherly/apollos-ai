@@ -142,8 +142,11 @@ fi
 
 # ─── Certs directory ──────────────────────────────────────────────────
 if [[ " ${PROFILES[*]} " =~ " proxy " ]]; then
-    mkdir -p certs
-    if [ ! -f certs/cert.pem ] && [ ! -f certs/key.pem ]; then
+    mkdir -p certs/ca
+    # Check what TLS mode the Caddyfile is using
+    if grep -q 'tls internal' Caddyfile 2>/dev/null; then
+        ok "Caddyfile is using internal TLS (self-signed) — no certificate files needed."
+    elif [ ! -f certs/cert.pem ] || [ ! -f certs/key.pem ]; then
         warn "No TLS certificates found in certs/"
         warn "Place your cert.pem and key.pem there, or edit Caddyfile for automatic HTTPS."
     else

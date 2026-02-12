@@ -69,6 +69,7 @@ dependencies = [
     "msal>=1.34.0",
     "casbin>=1.43.0",
     "casbin-sqlalchemy-adapter>=1.4.0",
+    "psycopg2-binary>=2.9.11",
 ]
 
 [dependency-groups]

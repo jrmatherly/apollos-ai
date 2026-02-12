@@ -26,11 +26,16 @@ services:
     image: ghcr.io/jrmatherly/apollos-ai:${IMAGE_TAG:-latest}
     container_name: apollos-ai
     restart: unless-stopped
+    platform: linux/amd64
     ports:
       - "${HOST_PORT:-50080}:80"
     volumes:
       - ./.env:/a0/.env:ro
       - apollos-data:/a0/usr
+      # Custom CA certificates — place your CA/intermediate PEM files in certs/ca/
+      # to trust internal CAs (e.g., for LiteLLM proxy with enterprise certificates).
+      # Then set REQUESTS_CA_BUNDLE in .env (see .env.example).
+      - ./certs/ca:/usr/local/share/ca-certificates/custom:ro
     env_file:
       - path: ./.env
         required: false
@@ -59,6 +64,8 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./certs:/etc/caddy/certs:ro

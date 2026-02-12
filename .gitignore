@@ -71,6 +71,8 @@ my-data/
 deploy/docker/certs/*.pem
 deploy/docker/certs/*.key
 deploy/docker/certs/*.crt
+deploy/docker/certs/ca/*.pem
+deploy/docker/certs/ca/*.crt
 
 # Drift: ignore caches and temporary data
 .drift/lake/
