@@ -7,6 +7,10 @@ from python.helpers.state_monitor_integration import mark_dirty_for_context
 class MessageQueueRemove(ApiHandler):
     """Remove message(s) from queue."""
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         context = AgentContext.get(input.get("context", ""))
         if not context:

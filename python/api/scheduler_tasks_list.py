@@ -7,6 +7,10 @@ from python.helpers.task_scheduler import TaskScheduler
 
 
 class SchedulerTasksList(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         List all tasks in the scheduler with their types

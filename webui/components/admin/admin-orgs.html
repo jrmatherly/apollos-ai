@@ -1,0 +1,95 @@
+<html>
+<body>
+  <div x-data="{ form: { name: '', slug: '' } }">
+    <!-- Toolbar -->
+    <div class="admin-toolbar">
+      <span style="font-size:0.85rem; font-weight:500;">Organizations</span>
+      <button class="admin-btn admin-btn-sm"
+        @click="$store.admin.showForm = !$store.admin.showForm; form = { name: '', slug: '' }">
+        + New Org
+      </button>
+    </div>
+
+    <!-- Create form -->
+    <template x-if="$store.admin.showForm">
+      <div class="admin-form">
+        <label>Name</label>
+        <input type="text" x-model="form.name" placeholder="Acme Corp">
+        <label>Slug (URL-safe)</label>
+        <input type="text" x-model="form.slug" placeholder="acme-corp">
+        <div class="admin-form-actions">
+          <button class="admin-btn admin-btn-secondary admin-btn-sm"
+            @click="$store.admin.showForm = false">Cancel</button>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.createOrg(form.name, form.slug)">Create</button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Loading -->
+    <template x-if="$store.admin.loading">
+      <div class="admin-loading">Loading...</div>
+    </template>
+
+    <!-- Table -->
+    <template x-if="!$store.admin.loading && $store.admin.orgs.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="org in $store.admin.orgs" :key="org.id">
+            <tr @click="$store.admin.selectOrg(org.id)" style="cursor:pointer"
+              :style="$store.admin.selectedOrgId === org.id ? 'background: rgba(255,255,255,0.05)' : ''">
+              <td x-text="org.name"></td>
+              <td x-text="org.slug" style="opacity:0.6; font-family:monospace; font-size:0.75rem"></td>
+              <td>
+                <span :style="org.is_active ? 'color:#4caf50' : 'color:#ff5252'"
+                  x-text="org.is_active ? 'Active' : 'Inactive'"></span>
+              </td>
+              <td x-text="org.created_at ? new Date(org.created_at).toLocaleDateString() : '-'"
+                style="font-size:0.75rem; opacity:0.6"></td>
+              <td class="admin-actions" @click.stop>
+                <button class="admin-btn admin-btn-sm admin-btn-secondary"
+                  @click="$store.admin.editingItem = {...org}">Edit</button>
+                <button class="admin-btn admin-btn-sm admin-btn-danger"
+                  x-show="org.is_active"
+                  @click="$store.admin.deactivateOrg(org.id)">Deactivate</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+
+    <template x-if="!$store.admin.loading && $store.admin.orgs.length === 0">
+      <div class="admin-empty">No organizations yet. Create one to get started.</div>
+    </template>
+
+    <!-- Edit modal (inline) -->
+    <template x-if="$store.admin.editingItem && $store.admin.activeTab === 'orgs'">
+      <div class="admin-form" style="margin-top:1rem">
+        <label>Edit Organization: <span x-text="$store.admin.editingItem.name"></span></label>
+        <label>Name</label>
+        <input type="text" x-model="$store.admin.editingItem.name">
+        <label>Slug</label>
+        <input type="text" x-model="$store.admin.editingItem.slug">
+        <div class="admin-form-actions">
+          <button class="admin-btn admin-btn-secondary admin-btn-sm"
+            @click="$store.admin.editingItem = null">Cancel</button>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.updateOrg($store.admin.editingItem.id, {name: $store.admin.editingItem.name, slug: $store.admin.editingItem.slug})">
+            Save
+          </button>
+        </div>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

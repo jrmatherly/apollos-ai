@@ -7,6 +7,10 @@ from python.helpers.task_scheduler import TaskScheduler, TaskState
 class SchedulerTaskRun(ApiHandler):
     _printer: PrintStyle = PrintStyle(italic=True, font_color="green", padding=False)
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         Manually run a task from the scheduler by ID

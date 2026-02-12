@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class ExportChat(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "read_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         ctxid = input.get("ctxid", "")
         if not ctxid:

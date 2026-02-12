@@ -1,0 +1,82 @@
+<html>
+<body>
+  <div x-data="{ form: { email: '', password: '', display_name: '', org_id: '', team_id: '', role: 'member' } }">
+    <div class="admin-toolbar">
+      <span style="font-size:0.85rem; font-weight:500;">Users</span>
+      <button class="admin-btn admin-btn-sm"
+        @click="$store.admin.showForm = !$store.admin.showForm; form = { email: '', password: '', display_name: '', org_id: $store.admin.selectedOrgId || '', team_id: '', role: 'member' }">
+        + Invite User
+      </button>
+    </div>
+
+    <template x-if="$store.admin.showForm">
+      <div class="admin-form">
+        <label>Email</label>
+        <input type="email" x-model="form.email" placeholder="user@example.com">
+        <label>Password</label>
+        <input type="password" x-model="form.password" placeholder="Initial password">
+        <label>Display Name (optional)</label>
+        <input type="text" x-model="form.display_name" placeholder="John Doe">
+        <label>Role</label>
+        <select x-model="form.role">
+          <option value="member">Member</option>
+          <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
+          <option value="lead">Team Lead</option>
+          <option value="viewer">Viewer</option>
+        </select>
+        <div class="admin-form-actions">
+          <button class="admin-btn admin-btn-secondary admin-btn-sm"
+            @click="$store.admin.showForm = false">Cancel</button>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.inviteUser(form.email, form.password, form.display_name, form.org_id, form.team_id, form.role)">
+            Invite
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="$store.admin.loading">
+      <div class="admin-loading">Loading...</div>
+    </template>
+
+    <template x-if="!$store.admin.loading && $store.admin.users.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Provider</th>
+            <th>Status</th>
+            <th>System Admin</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="user in $store.admin.users" :key="user.id">
+            <tr>
+              <td x-text="user.email" style="font-family:monospace; font-size:0.75rem"></td>
+              <td x-text="user.display_name || '-'"></td>
+              <td x-text="user.auth_provider" style="font-size:0.75rem; opacity:0.6"></td>
+              <td>
+                <span :style="user.is_active ? 'color:#4caf50' : 'color:#ff5252'"
+                  x-text="user.is_active ? 'Active' : 'Inactive'"></span>
+              </td>
+              <td x-text="user.is_system_admin ? 'Yes' : 'No'" style="opacity:0.6"></td>
+              <td class="admin-actions">
+                <button class="admin-btn admin-btn-sm admin-btn-danger"
+                  x-show="user.is_active"
+                  @click="$store.admin.deactivateUser(user.id)">Deactivate</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+
+    <template x-if="!$store.admin.loading && $store.admin.users.length === 0">
+      <div class="admin-empty">No users found.</div>
+    </template>
+  </div>
+</body>
+</html>

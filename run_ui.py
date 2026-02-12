@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 import secrets
@@ -46,6 +47,7 @@ from python.helpers import (
 )
 from python.helpers import settings as settings_helper
 from python.helpers.api import ApiHandler
+from python.helpers.auth import get_auth_manager, init_auth
 from python.helpers.extract_tools import load_classes_from_folder
 from python.helpers.files import get_abs_path
 from python.helpers.print_style import PrintStyle
@@ -78,9 +80,10 @@ webapp.config.update(
     JSON_SORT_KEYS=False,
     SESSION_COOKIE_NAME="session_"
     + runtime.get_runtime_id(),  # bind the session cookie name to runtime id to prevent session collision on same host
-    SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SAMESITE="Lax",  # Lax required for OIDC redirect-back
+    SESSION_COOKIE_HTTPONLY=True,
     SESSION_PERMANENT=True,
-    PERMANENT_SESSION_LIFETIME=timedelta(days=1),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
     MAX_CONTENT_LENGTH=int(
         os.getenv("FLASK_MAX_CONTENT_LENGTH", str(UPLOAD_LIMIT_BYTES))
     ),
@@ -123,10 +126,13 @@ def add_security_headers(response):
     # CSP: Alpine.js requires unsafe-eval; Socket.IO needs ws: connect-src
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; "
+        "script-src-elem 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net; "
         "style-src 'self' 'unsafe-inline'; "
+        "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: blob:; "
-        "connect-src 'self' ws: wss:; "
+        "connect-src 'self' ws: wss: https://cdn.jsdelivr.net; "
         "frame-ancestors 'none';"
     )
     return response
@@ -231,15 +237,20 @@ def requires_loopback(f):
 def requires_auth(f):
     @wraps(f)
     async def decorated(*args, **kwargs):
-        user_pass_hash = login.get_credentials_hash()
-        # If no auth is configured, just proceed
-        if not user_pass_hash:
+        # New multi-user auth: check session["authentication"] (set by AuthManager)
+        if session.get("authentication"):
+            from flask import g
+
+            g.current_user = session.get("user")
             return await f(*args, **kwargs)
 
-        if session.get("authentication") != user_pass_hash:
-            return redirect(url_for("login_handler"))
+        # Legacy fallback: AUTH_LOGIN/AUTH_PASSWORD env vars (pre-Phase 1)
+        user_pass_hash = login.get_credentials_hash()
+        if not user_pass_hash:
+            # No auth configured at all — proceed without auth
+            return await f(*args, **kwargs)
 
-        return await f(*args, **kwargs)
+        return redirect(url_for("login_handler"))
 
     return decorated
 
@@ -259,28 +270,235 @@ def csrf_protect(f):
 
 
 @webapp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10/minute")
 async def login_handler():
+    from python.helpers.login_protection import login_protection
+
     error = None
     if request.method == "POST":
-        user = dotenv.get_dotenv_value("AUTH_LOGIN")
-        password = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
 
-        if request.form["username"] == user and request.form["password"] == password:
+        # Check brute force lockout
+        if login_protection.check_locked(username):
+            remaining = login_protection.lockout_remaining(username)
+            resp = Response("Too many failed attempts. Please try again later.", 429)
+            resp.headers["Retry-After"] = str(int(remaining) + 1)
+
+            # Audit log the lockout
+            try:
+                from python.helpers.audit import create_audit_entry
+
+                await create_audit_entry(
+                    user_id=None,
+                    action="login_locked",
+                    resource="/login",
+                    details={"username": username},
+                    ip=request.remote_addr,
+                )
+            except Exception:
+                pass
+            return resp
+
+        # Try new multi-user auth (local accounts in auth.db)
+        try:
+            auth_mgr = get_auth_manager()
+            userinfo = auth_mgr.login_local(username, password)
+            if userinfo:
+                login_protection.record_success(username)
+                auth_mgr.establish_session(userinfo)
+                # Audit log success
+                try:
+                    from python.helpers.audit import create_audit_entry
+
+                    await create_audit_entry(
+                        user_id=userinfo.get("id"),
+                        action="login",
+                        resource="/login",
+                        details={"method": "local"},
+                        ip=request.remote_addr,
+                    )
+                except Exception:
+                    pass
+                return redirect(url_for("serve_index"))
+        except RuntimeError:
+            pass  # AuthManager not initialized — fall through to legacy
+
+        # Legacy fallback: AUTH_LOGIN/AUTH_PASSWORD env vars
+        legacy_user = dotenv.get_dotenv_value("AUTH_LOGIN")
+        legacy_pass = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        if legacy_user and username == legacy_user and password == legacy_pass:
+            login_protection.record_success(username)
             session["authentication"] = login.get_credentials_hash()
+            # Audit log legacy success
+            try:
+                from python.helpers.audit import create_audit_entry
+
+                await create_audit_entry(
+                    user_id=None,
+                    action="login",
+                    resource="/login",
+                    details={"method": "legacy"},
+                    ip=request.remote_addr,
+                )
+            except Exception:
+                pass
             return redirect(url_for("serve_index"))
-        else:
-            await asyncio.sleep(1)
-            error = "Invalid Credentials. Please try again."
+
+        # Failed login
+        delay = login_protection.record_failure(username)
+        await asyncio.sleep(delay)
+
+        # Audit log failure
+        try:
+            from python.helpers.audit import create_audit_entry
+
+            await create_audit_entry(
+                user_id=None,
+                action="login_failed",
+                resource="/login",
+                details={"username": username},
+                ip=request.remote_addr,
+            )
+        except Exception:
+            pass
+
+        error = "Invalid credentials. Please try again."
+
+    # Determine if OIDC SSO button should be shown
+    oidc_enabled = False
+    try:
+        oidc_enabled = get_auth_manager().is_oidc_configured
+    except RuntimeError:
+        pass
 
     login_page_content = files.read_file("webui/login.html")
     return render_template_string(
-        login_page_content, error=error, brand_name=branding.BRAND_NAME
+        login_page_content,
+        error=error,
+        brand_name=branding.BRAND_NAME,
+        oidc_enabled=oidc_enabled,
     )
+
+
+@webapp.route("/login/entra")
+async def login_entra():
+    """Redirect to EntraID OIDC authorization endpoint."""
+    try:
+        auth_mgr = get_auth_manager()
+        if not auth_mgr.is_oidc_configured:
+            return redirect(url_for("login_handler"))
+        login_url = auth_mgr.get_login_url()
+        return redirect(login_url)
+    except Exception as e:
+        PrintStyle.error(f"OIDC login initiation failed: {e}")
+        return redirect(url_for("login_handler"))
+
+
+@webapp.route("/auth/callback")
+async def auth_callback():
+    """Handle the OIDC callback — exchange code for tokens."""
+    try:
+        auth_mgr = get_auth_manager()
+        userinfo = auth_mgr.process_callback(dict(request.args))
+        auth_mgr.establish_session(userinfo)
+        return redirect(url_for("serve_index"))
+    except Exception as e:
+        PrintStyle.error(f"OIDC callback failed: {e}")
+        login_page_content = files.read_file("webui/login.html")
+        return render_template_string(
+            login_page_content,
+            error="SSO authentication failed. Please try again or use local login.",
+            brand_name=branding.BRAND_NAME,
+            oidc_enabled=True,
+        )
+
+
+@webapp.route("/mcp/oauth/callback")
+async def mcp_oauth_callback():
+    """Handle third-party MCP OAuth redirect callback.
+
+    Receives the authorization code from an MCP service's OAuth provider,
+    stores the token via VaultTokenStorage, and closes the popup window.
+    """
+    from python.helpers.print_style import PrintStyle
+
+    code = request.args.get("code")
+    state = request.args.get("state")
+    error = request.args.get("error")
+
+    if error:
+        PrintStyle.error(f"MCP OAuth callback error: {error}")
+        return _mcp_oauth_popup_response(
+            success=False,
+            message=f"OAuth authorization failed: {error}",
+        )
+
+    if not code or not state:
+        return _mcp_oauth_popup_response(
+            success=False,
+            message="Missing authorization code or state parameter.",
+        )
+
+    try:
+        import json as _json
+
+        # Decode state to find user_id and service_id
+        state_data = _json.loads(base64.b64decode(state).decode())
+        user_id = state_data.get("user_id")
+        service_id = state_data.get("service_id")
+
+        if not user_id or not service_id:
+            return _mcp_oauth_popup_response(
+                success=False,
+                message="Invalid state parameter.",
+            )
+
+        # Store the authorization code for the connection manager to exchange
+        from python.helpers import auth_db, user_store
+
+        with auth_db.get_session() as db:
+            user_store.upsert_connection(
+                db,
+                user_id,
+                service_id,
+                scopes_granted=state_data.get("scopes", ""),
+            )
+
+        return _mcp_oauth_popup_response(
+            success=True, message="Connected successfully!"
+        )
+    except Exception as e:
+        PrintStyle.error(f"MCP OAuth callback processing failed: {e}")
+        return _mcp_oauth_popup_response(
+            success=False,
+            message="Failed to process OAuth callback.",
+        )
+
+
+def _mcp_oauth_popup_response(*, success: bool, message: str) -> str:
+    """Return HTML that shows a message and closes the popup window."""
+    color = "#4caf50" if success else "#ff5252"
+    return f"""<!DOCTYPE html>
+<html><head><title>MCP OAuth</title></head>
+<body style="font-family:sans-serif; text-align:center; padding:2rem; background:#1a1a1a; color:#eee">
+<h2 style="color:{color}">{"Connected!" if success else "Error"}</h2>
+<p>{message}</p>
+<script>
+  if (window.opener) {{
+    window.opener.postMessage({{ type: 'mcp_oauth_complete', success: {str(success).lower()} }}, '*');
+    setTimeout(() => window.close(), 1500);
+  }}
+</script>
+</body></html>"""
 
 
 @webapp.route("/logout")
 async def logout_handler():
-    session.pop("authentication", None)
+    try:
+        get_auth_manager().clear_session()
+    except RuntimeError:
+        session.pop("authentication", None)
     return redirect(url_for("login_handler"))
 
 
@@ -297,13 +515,34 @@ async def serve_index():
             "commit_time": "unknown",
         }
     index = files.read_file("webui/index.html")
+
+    # Build safe user JSON for frontend (no sensitive fields)
+    user_info = session.get("user")
+    if user_info and session.get("authentication"):
+        import json as _json
+
+        safe_user = {
+            "id": user_info.get("id", ""),
+            "email": user_info.get("email", ""),
+            "name": user_info.get("name", ""),
+            "auth_method": user_info.get("auth_method", ""),
+        }
+        user_json = _json.dumps(safe_user).replace('"', '\\"')
+    else:
+        user_json = ""
+
     index = files.replace_placeholders_text(
         _content=index,
         version_no=gitinfo["version"],
         version_time=gitinfo["commit_time"],
         runtime_id=runtime.get_runtime_id(),
         runtime_is_development=("true" if runtime.is_development() else "false"),
-        logged_in=("true" if login.get_credentials_hash() else "false"),
+        logged_in=(
+            "true"
+            if session.get("authentication") or login.get_credentials_hash()
+            else "false"
+        ),
+        user_json=user_json,
     )
     return index
 
@@ -439,17 +678,22 @@ def configure_websocket_namespaces(
                     return False
 
                 if _auth_required:
-                    credentials_hash = login.get_credentials_hash()
-                    if credentials_hash:
-                        if session.get("authentication") != credentials_hash:
-                            PrintStyle.warning(
-                                f"WebSocket authentication failed for {_namespace} {sid}: session not valid"
-                            )
-                            return False
+                    # New multi-user auth: session["authentication"] is True
+                    if session.get("authentication") is True:
+                        pass  # Authenticated via AuthManager
                     else:
-                        PrintStyle.debug(
-                            "WebSocket authentication required but credentials not configured; proceeding"
-                        )
+                        # Legacy: AUTH_LOGIN/AUTH_PASSWORD env var auth
+                        credentials_hash = login.get_credentials_hash()
+                        if credentials_hash:
+                            if session.get("authentication") != credentials_hash:
+                                PrintStyle.warning(
+                                    f"WebSocket authentication failed for {_namespace} {sid}: session not valid"
+                                )
+                                return False
+                        else:
+                            PrintStyle.debug(
+                                "WebSocket authentication required but credentials not configured; proceeding"
+                            )
 
                 if _csrf_required:
                     expected_token = session.get("csrf_token")
@@ -481,7 +725,8 @@ def configure_websocket_namespaces(
                         )
                         return False
 
-                user_id = session.get("user_id") or "single_user"
+                user_data = session.get("user")
+                user_id = user_data["id"] if user_data else "single_user"
                 await websocket_manager.handle_connect(_namespace, sid, user_id=user_id)
                 return True
 
@@ -576,6 +821,15 @@ def run():
         websocket_manager=websocket_manager,
         handlers_by_namespace=handlers_by_namespace,
     )
+
+    # Initialize multi-user auth system (Phase 1)
+    try:
+        from python.helpers.auth_bootstrap import bootstrap as auth_bootstrap
+
+        auth_bootstrap()
+        init_auth(webapp)
+    except Exception as e:
+        PrintStyle.warning(f"Auth system initialization skipped: {e}")
 
     init_a0()
 

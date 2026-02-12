@@ -5,6 +5,10 @@ from python.helpers.file_browser import FileBrowser
 
 
 class DeleteWorkDirFile(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "write")
+
     async def process(self, input: Input, request: Request) -> Output:
         try:
             file_path = input.get("path", "")

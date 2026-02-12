@@ -150,19 +150,21 @@ run = "uv lock"
 # --- Build tasks ---
 
 [tasks."docker:build:base"]
-description = "Build base Docker image locally (Kali + system packages)"
+description = "Build base Docker image locally (Kali + system packages, amd64)"
 run = '''
 docker build -t apollos-ai-base:local \
+  --platform linux/amd64 \
   --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
   docker/base
 '''
 sources = ["docker/base/**"]
 
 [tasks."docker:build:app"]
-description = "Build app Docker image from a git branch (default: main)"
+description = "Build app Docker image from a git branch (default: main, amd64)"
 run = '''
 BRANCH="${1:-main}"
 docker build -t apollos-ai-${BRANCH} \
+  --platform linux/amd64 \
   --build-arg BRANCH=${BRANCH} \
   --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
   docker/run
@@ -170,9 +172,10 @@ docker build -t apollos-ai-${BRANCH} \
 sources = ["docker/run/**"]
 
 [tasks."docker:build:local"]
-description = "Build local Docker image from working tree"
+description = "Build local Docker image from working tree (amd64)"
 run = '''
 docker build -f DockerfileLocal -t apollos-ai-local \
+  --platform linux/amd64 \
   --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
 '''
 sources = ["DockerfileLocal", "requirements.txt", "docker/**"]
@@ -207,8 +210,8 @@ docker buildx build \
 # --- Run tasks ---
 
 [tasks."docker:run"]
-description = "Run local Docker container"
-run = "docker run -it -p 50080:80 apollos-ai-local"
+description = "Run local Docker container (amd64)"
+run = "docker run -it --platform linux/amd64 -p 50080:80 apollos-ai-local"
 
 # ============================================================================
 # Git Hooks (hk)
@@ -464,6 +467,8 @@ find . -path ./.venv -prune -o -type f -name '*.pyc' -print -delete 2>/dev/null 
 echo "→ User settings & secrets..."
 rm -f usr/settings.json
 rm -f usr/secrets.env
+rm -f usr/auth_token_cache.bin
+rm -f usr/auth.db
 
 # --- 3. Chat history ---
 echo "→ Chat history..."

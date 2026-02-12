@@ -18,7 +18,10 @@ class StateSyncHandler(WebSocketHandler):
     async def on_connect(self, sid: str) -> None:
         monitor = get_state_monitor()
         monitor.bind_manager(self.manager, handler_id=self.identifier)
-        monitor.register_sid(self.namespace, sid)
+        # Resolve user_id from the WebSocket manager's session tracking
+        identity = (self.namespace, sid)
+        ws_user_id = self.manager.sid_to_user.get(identity)
+        monitor.register_sid(self.namespace, sid, user_id=ws_user_id)
         if _ws_debug_enabled():
             PrintStyle.debug(f"[StateSyncHandler] connect sid={sid}")
 

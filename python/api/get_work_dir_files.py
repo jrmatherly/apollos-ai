@@ -8,6 +8,10 @@ class GetWorkDirFiles(ApiHandler):
     def get_methods(cls):
         return ["GET"]
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         current_path = request.args.get("path", "")
         if current_path == "$WORK_DIR":

@@ -9,6 +9,10 @@ from python.helpers.file_browser import FileBrowser
 
 
 class UploadWorkDirFiles(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         if "files[]" not in request.files:
             raise Exception("No files uploaded")

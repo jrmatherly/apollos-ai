@@ -2,6 +2,10 @@ from python.helpers.api import ApiHandler, Request, Response
 
 
 class Nudge(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "write")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         ctxid = input.get("ctxid", "")
         if not ctxid:

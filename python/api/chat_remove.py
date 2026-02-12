@@ -5,6 +5,10 @@ from python.helpers.task_scheduler import TaskScheduler
 
 
 class RemoveChat(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("chats", "delete")
+
     async def process(self, input: Input, request: Request) -> Output:
         ctxid = input.get("context", "")
 
@@ -16,8 +20,10 @@ class RemoveChat(ApiHandler):
             # stop processing any tasks
             context.reset()
 
+        # Resolve context for user-scoped path before removing
+        resolved_ctx = AgentContext.get(ctxid)
         AgentContext.remove(ctxid)
-        persist_chat.remove_chat(ctxid)
+        persist_chat.remove_chat(ctxid, resolved_ctx)
 
         await scheduler.reload()
 

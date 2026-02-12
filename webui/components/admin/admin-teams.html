@@ -1,0 +1,94 @@
+<html>
+<body>
+  <div x-data="{ form: { name: '', slug: '' } }">
+    <template x-if="!$store.admin.selectedOrgId">
+      <div class="admin-empty">Select an organization from the Organizations tab first.</div>
+    </template>
+
+    <template x-if="$store.admin.selectedOrgId">
+      <div>
+        <div class="admin-toolbar">
+          <span style="font-size:0.85rem; font-weight:500;">
+            Teams in
+            <span x-text="($store.admin.orgs.find(o => o.id === $store.admin.selectedOrgId) || {}).name || 'selected org'"></span>
+          </span>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.showForm = !$store.admin.showForm; form = { name: '', slug: '' }">
+            + New Team
+          </button>
+        </div>
+
+        <template x-if="$store.admin.showForm">
+          <div class="admin-form">
+            <label>Name</label>
+            <input type="text" x-model="form.name" placeholder="Engineering">
+            <label>Slug</label>
+            <input type="text" x-model="form.slug" placeholder="engineering">
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm"
+                @click="$store.admin.showForm = false">Cancel</button>
+              <button class="admin-btn admin-btn-sm"
+                @click="$store.admin.createTeam($store.admin.selectedOrgId, form.name, form.slug)">Create</button>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="$store.admin.loading">
+          <div class="admin-loading">Loading...</div>
+        </template>
+
+        <template x-if="!$store.admin.loading && $store.admin.teams.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="team in $store.admin.teams" :key="team.id">
+                <tr>
+                  <td x-text="team.name"></td>
+                  <td x-text="team.slug" style="opacity:0.6; font-family:monospace; font-size:0.75rem"></td>
+                  <td x-text="team.created_at ? new Date(team.created_at).toLocaleDateString() : '-'"
+                    style="font-size:0.75rem; opacity:0.6"></td>
+                  <td class="admin-actions">
+                    <button class="admin-btn admin-btn-sm admin-btn-secondary"
+                      @click="$store.admin.editingItem = {...team}">Edit</button>
+                    <button class="admin-btn admin-btn-sm admin-btn-danger"
+                      @click="$store.admin.deleteTeam(team.id)">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+
+        <template x-if="!$store.admin.loading && $store.admin.teams.length === 0">
+          <div class="admin-empty">No teams in this organization.</div>
+        </template>
+
+        <template x-if="$store.admin.editingItem && $store.admin.activeTab === 'teams'">
+          <div class="admin-form" style="margin-top:1rem">
+            <label>Edit Team</label>
+            <label>Name</label>
+            <input type="text" x-model="$store.admin.editingItem.name">
+            <label>Slug</label>
+            <input type="text" x-model="$store.admin.editingItem.slug">
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm"
+                @click="$store.admin.editingItem = null">Cancel</button>
+              <button class="admin-btn admin-btn-sm"
+                @click="$store.admin.updateTeam($store.admin.editingItem.id, {name: $store.admin.editingItem.name, slug: $store.admin.editingItem.slug})">
+                Save
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

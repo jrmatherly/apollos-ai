@@ -4,7 +4,10 @@ import hmac
 import json
 import os
 import subprocess
-from typing import Any, Literal, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, cast
+
+if TYPE_CHECKING:
+    from python.helpers.tenant import TenantContext
 
 import models
 from python.helpers import defer, git, runtime, whisper
@@ -439,6 +442,83 @@ def set_settings_delta(delta: dict, apply: bool = True):
     current = get_settings()
     new = {**current, **delta}
     return set_settings(new, apply)  # type: ignore
+
+
+GLOBAL_SETTINGS_FILE = files.get_abs_path("usr/global/settings.json")
+
+
+def get_settings_for_tenant(tenant_ctx: "TenantContext") -> Settings:
+    """Get settings with tenant cascade: defaults → global → user.
+
+    For system users, behaves identically to get_settings().
+    For authenticated users, layers user-specific overrides on top.
+    """
+    if tenant_ctx.is_system:
+        return get_settings()
+
+    # Start from global settings (code defaults + system settings file)
+    base = get_settings()
+
+    # Layer user-specific overrides
+    user_file = files.get_abs_path(tenant_ctx.settings_file)
+    if os.path.exists(user_file):
+        try:
+            content = files.read_file(user_file)
+            user_delta = json.loads(content)
+            # Merge user overrides on top of global settings
+            for key, value in user_delta.items():
+                if key in base:
+                    base[key] = value
+        except (json.JSONDecodeError, OSError):
+            pass  # Skip corrupt user settings
+
+    return normalize_settings(base)
+
+
+def set_settings_for_tenant(
+    settings: Settings, tenant_ctx: "TenantContext"
+) -> Settings:
+    """Save settings for a specific tenant.
+
+    For system users, delegates to set_settings().
+    For authenticated users, computes delta vs global defaults and writes
+    only the differences to the user's settings file.
+    """
+    if tenant_ctx.is_system:
+        return set_settings(settings)
+
+    # Compute delta: only store values that differ from global settings
+    global_settings = get_settings()
+    delta: dict = {}
+    for key, value in settings.items():
+        if key in global_settings and global_settings[key] != value:
+            delta[key] = value
+
+    # Write sensitive settings to .env (API keys, passwords) — these are global
+    _write_sensitive_settings(settings)
+
+    # Remove sensitive fields from the user delta
+    for sensitive_key in (
+        "api_keys",
+        "auth_login",
+        "auth_password",
+        "rfc_password",
+        "root_password",
+        "mcp_server_token",
+        "secrets",
+    ):
+        delta.pop(sensitive_key, None)
+
+    # Write user-specific delta file
+    user_file = files.get_abs_path(tenant_ctx.settings_file)
+    files.make_dirs(user_file)
+    content = json.dumps(delta, indent=4)
+    files.write_file(user_file, content)
+
+    # Apply settings changes (MCP reload, model updates, etc.)
+    _apply_settings(global_settings)
+
+    return get_settings_for_tenant(tenant_ctx)
 
 
 def merge_settings(original: Settings, delta: dict) -> Settings:

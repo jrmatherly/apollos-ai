@@ -8,6 +8,10 @@ from python.helpers.notification import (
 
 
 class Projects(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("projects", "read")
+
     async def process(self, input: Input, request: Request) -> Output:
         action = input.get("action", "")
         ctxid = input.get("context_id", None)

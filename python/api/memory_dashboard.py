@@ -10,6 +10,10 @@ from python.helpers.memory import (
 
 
 class MemoryDashboard(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("memory", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         try:
             action = input.get("action", "search")

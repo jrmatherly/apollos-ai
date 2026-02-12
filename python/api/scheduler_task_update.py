@@ -13,6 +13,10 @@ from python.helpers.task_scheduler import (
 
 
 class SchedulerTaskUpdate(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         Update an existing task in the scheduler

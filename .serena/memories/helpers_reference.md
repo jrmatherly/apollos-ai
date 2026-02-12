@@ -1,4 +1,4 @@
-# Apollos AI - Helpers Reference (84 modules)
+# Apollos AI - Helpers Reference (89 modules)
 
 ## Grouped by Functional Area
 
@@ -128,13 +128,22 @@
 | `subagents.py` | Agent hierarchy path resolution |
 | `localization.py` | Multi-language support |
 
+### Authentication & Multi-User (5)
+| Module | Purpose |
+|--------|---------|
+| `auth.py` | AuthManager — EntraID OIDC SSO + local fallback, PersistentTokenCache, session management |
+| `auth_db.py` | SQLAlchemy engine/session factory for auth database (`AUTH_DATABASE_URL`) |
+| `auth_bootstrap.py` | First-launch bootstrap: run Alembic migrations, create admin account |
+| `user_store.py` | ORM models (User, Org, Team, etc.) + CRUD (upsert_user, verify_password, sync_group_memberships) |
+| `vault_crypto.py` | AES-256-GCM encryption/decryption with HKDF-derived keys (`VAULT_MASTER_KEY`) |
+| `login.py` | Legacy HMAC-SHA256 authentication (AUTH_LOGIN/AUTH_PASSWORD) |
+
 ### Other (8)
 | Module | Purpose |
 |--------|---------|
 | `backup.py` | BackupService for data export/import |
 | `migration.py` | Data migration between versions |
 | `update_check.py` | Version update checking |
-| `login.py` | Authentication credential management |
 | `git.py` | Git info extraction |
 | `tunnel_manager.py` | Cloudflare tunnel management |
 | `task_scheduler.py` | Cron-based task scheduling |

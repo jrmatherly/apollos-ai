@@ -3,6 +3,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class Subagents(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("agents", "read")
+
     async def process(self, input: Input, request: Request) -> Output:
         action = input.get("action", "")
         ctxid = input.get("context_id", None)

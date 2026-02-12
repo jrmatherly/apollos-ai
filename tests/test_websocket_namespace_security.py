@@ -161,9 +161,14 @@ async def test_connect_security_is_computed_per_namespace_and_enforced(
         session_cookie = _make_session_cookie(
             webapp,
             {
-                "authentication": "hash",
+                "authentication": True,
                 "csrf_token": csrf_token,
-                "user_id": "u1",
+                "user": {
+                    "id": "u1",
+                    "email": "u1@test.com",
+                    "name": "User 1",
+                    "auth_method": "local",
+                },
             },
         )
         session_cookie_name = webapp.config.get("SESSION_COOKIE_NAME", "session")
@@ -318,7 +323,12 @@ async def test_secure_namespace_rejects_missing_auth_even_with_valid_csrf(
             webapp,
             {
                 "csrf_token": csrf_token,
-                "user_id": "u1",
+                "user": {
+                    "id": "u1",
+                    "email": "u1@test.com",
+                    "name": "User 1",
+                    "auth_method": "local",
+                },
             },
         )
         session_cookie_name = webapp.config.get("SESSION_COOKIE_NAME", "session")
@@ -389,9 +399,14 @@ async def test_secure_namespace_rejects_invalid_csrf_cookie(monkeypatch) -> None
         session_cookie = _make_session_cookie(
             webapp,
             {
-                "authentication": "hash",
+                "authentication": True,
                 "csrf_token": csrf_token,
-                "user_id": "u1",
+                "user": {
+                    "id": "u1",
+                    "email": "u1@test.com",
+                    "name": "User 1",
+                    "auth_method": "local",
+                },
             },
         )
         session_cookie_name = webapp.config.get("SESSION_COOKIE_NAME", "session")
@@ -481,7 +496,12 @@ async def test_csrf_required_without_auth_is_enforced(monkeypatch) -> None:
             webapp,
             {
                 "csrf_token": csrf_token,
-                "user_id": "u1",
+                "user": {
+                    "id": "u1",
+                    "email": "u1@test.com",
+                    "name": "User 1",
+                    "auth_method": "local",
+                },
             },
         )
         session_cookie_name = webapp.config.get("SESSION_COOKIE_NAME", "session")

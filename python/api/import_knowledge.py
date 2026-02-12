@@ -6,6 +6,10 @@ from python.helpers.security import safe_filename
 
 
 class ImportKnowledge(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("knowledge", "upload")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         if "files[]" not in request.files:
             raise Exception("No files part")

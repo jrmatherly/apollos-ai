@@ -18,6 +18,10 @@ from python.helpers.task_scheduler import (
 
 
 class SchedulerTaskCreate(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         Create a new task in the scheduler

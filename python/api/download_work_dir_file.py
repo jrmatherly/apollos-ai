@@ -92,6 +92,10 @@ class DownloadFile(ApiHandler):
     def get_methods(cls):
         return ["GET"]
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "read")
+
     async def process(self, input: Input, request: Request) -> Output:
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:

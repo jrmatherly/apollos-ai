@@ -27,6 +27,12 @@
                   <span x-text="$store.branding.name + ' A2A Server'"></span>
                 </a>
               </li>
+              <li>
+                <a href="#section-mcp-services">
+                  <img src="/public/mcp_client.svg" alt="MCP Services" />
+                  <span>Services</span>
+                </a>
+              </li>
             </ul>
           </nav>
 
@@ -38,6 +44,9 @@
           </div>
           <div id="section-a2a-server" class="section">
             <x-component path="settings/a2a/a2a-server.html"></x-component>
+          </div>
+          <div id="section-mcp-services" class="section">
+            <x-component path="settings/mcp/services/mcp-services.html"></x-component>
           </div>
         </div>
       </template>

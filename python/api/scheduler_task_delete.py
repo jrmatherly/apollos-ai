@@ -6,6 +6,10 @@ from python.helpers.task_scheduler import TaskScheduler, TaskState
 
 
 class SchedulerTaskDelete(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("scheduler", "manage_own")
+
     async def process(self, input: Input, request: Request) -> Output:
         """
         Delete a task from the scheduler by ID
@@ -45,7 +49,7 @@ class SchedulerTaskDelete(ApiHandler):
         # This is a dedicated context for the task, so we remove it
         if context and context.id == task.uuid:
             AgentContext.remove(context.id)
-            persist_chat.remove_chat(context.id)
+            persist_chat.remove_chat(context.id, context)
 
         # Remove the task
         await scheduler.remove_task_by_uuid(task_id)

@@ -13,8 +13,8 @@ Variables in `usr/.env` override system environment. The file is gitignored and 
 
 | Variable | Description | Values | Default | Required |
 |----------|-------------|--------|---------|----------|
-| `AUTH_LOGIN` | Web UI login username | Any string | *(empty)* | No |
-| `AUTH_PASSWORD` | Web UI login password | Any string | *(empty)* | No |
+| `AUTH_LOGIN` | Legacy single-user login username. For multi-user accounts, use `ADMIN_EMAIL`/`ADMIN_PASSWORD` instead. Kept as a backward-compatible fallback. | Any string | *(empty)* | No |
+| `AUTH_PASSWORD` | Legacy single-user login password. Paired with `AUTH_LOGIN`. | Any string | *(empty)* | No |
 | `ROOT_PASSWORD` | Root password for code execution container. Auto-generated (32-char alphanumeric) inside Docker if unset. | Any string | *(auto-generated in Docker)* | No |
 | `RFC_PASSWORD` | Remote Function Call password for SSH/HTTP to execution sandbox | Any string | *(empty)* | No |
 | `FLASK_SECRET_KEY` | Flask session signing key; auto-generated if unset | Hex string (64 chars) | Random `secrets.token_hex(32)` | No |
@@ -31,6 +31,73 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 # FLASK_SECRET_KEY — 64-char hex string (matches app's secrets.token_hex(32) format)
 python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+## Multi-User Auth Database
+
+The multi-user authentication system uses SQLAlchemy with an SQLite (or PostgreSQL) database to store users, organizations, teams, and API key vault entries. Managed by `python/helpers/auth_db.py` and `python/helpers/user_store.py`.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `AUTH_DATABASE_URL` | SQLAlchemy connection string for the auth database | SQLAlchemy URL | `sqlite:///usr/auth.db` | No |
+| `VAULT_MASTER_KEY` | Master encryption key for the API key vault (AES-256-GCM via `python/helpers/vault_crypto.py`). Required for OIDC token cache encryption. | 64-char hex string (256 bits) | *(none)* | For OIDC + vault |
+| `ADMIN_EMAIL` | Bootstrap admin email; creates an admin account on first launch if set | Email address | *(none)* | No |
+| `ADMIN_PASSWORD` | Bootstrap admin password; used with `ADMIN_EMAIL` on first launch | Any string | *(none)* | With `ADMIN_EMAIL` |
+
+**Generating secure values:**
+
+```bash
+# VAULT_MASTER_KEY — 256-bit AES key (64-char hex)
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+## EntraID OIDC SSO
+
+Microsoft Entra ID (Azure AD) app registration for single sign-on via OIDC authorization-code flow. Managed by `python/helpers/auth.py` (AuthManager). When all four OIDC variables are set, the login page shows a "Sign in with Microsoft" SSO button alongside the local login form.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `OIDC_TENANT_ID` | Microsoft Entra tenant ID | UUID | *(none)* | For OIDC |
+| `OIDC_CLIENT_ID` | Entra app registration client ID | UUID | *(none)* | For OIDC |
+| `OIDC_CLIENT_SECRET` | Entra app registration client secret | String | *(none)* | For OIDC |
+| `OIDC_REDIRECT_URI` | Explicit OIDC callback URL; auto-generated from Flask `url_for` if unset. Set explicitly in production behind a reverse proxy. | URL | *(auto: `/auth/callback`)* | No |
+
+**Setup steps:**
+
+1. Register an app in Microsoft Entra ID (Azure Portal > App registrations)
+2. Set redirect URI to `https://your-domain/auth/callback`
+3. Create a client secret
+4. Set `OIDC_TENANT_ID`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` in `usr/.env`
+5. Set `VAULT_MASTER_KEY` for encrypted MSAL token cache persistence
+
+## MCP Server OAuth (Inbound Auth)
+
+Optional Entra ID OAuth for inbound MCP connections (IDE clients like VS Code, Cursor, Claude Code). Managed by `python/helpers/mcp_server.py` via FastMCP's `AzureProvider`. When all three required variables are set, the MCP server accepts OAuth Bearer tokens alongside the existing token-in-path authentication.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `MCP_AZURE_CLIENT_ID` | Azure App Registration client ID for the MCP API (separate from OIDC app registration) | UUID | *(none)* | For MCP OAuth |
+| `MCP_AZURE_CLIENT_SECRET` | Client secret for the MCP Azure app | String | *(none)* | For MCP OAuth |
+| `MCP_AZURE_TENANT_ID` | Entra ID tenant (GUID, "organizations", or "consumers"; NOT "common") | UUID or keyword | *(none)* | For MCP OAuth |
+| `MCP_SERVER_BASE_URL` | Public URL of the server (including protocol). Used for OAuth callbacks. | URL | `http://localhost:50080` | Production |
+| `MCP_AZURE_IDENTIFIER_URI` | Application ID URI for scope prefixing | URI | `api://{MCP_AZURE_CLIENT_ID}` | No |
+| `MCP_AZURE_REDIRECT_URIS` | Comma-separated allowed client redirect URIs | URL list | *(none — all allowed)* | No |
+| `MCP_AZURE_JWT_SIGNING_KEY` | Persistent key for signing OAuth proxy tokens (survives server restarts) | String | *(none — random per restart)* | Production |
+
+**Setup steps:**
+
+1. Register a **separate** app in Microsoft Entra ID (Azure Portal > App registrations)
+2. Add redirect URIs for your IDE clients
+3. Under "Expose an API", set the Application ID URI (`api://{client-id}`) and add scopes: `discover`, `tools.read`, `tools.execute`, `chat`
+4. Create a client secret
+5. Set `MCP_AZURE_CLIENT_ID`, `MCP_AZURE_CLIENT_SECRET`, `MCP_AZURE_TENANT_ID` in `usr/.env`
+6. Set `MCP_SERVER_BASE_URL` and `MCP_AZURE_JWT_SIGNING_KEY` for production
+
+**Generating secure values:**
+
+```bash
+# MCP_AZURE_JWT_SIGNING_KEY — persistent signing key
+python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
 ## Server & Networking
@@ -279,6 +346,7 @@ These variables are read by `python/helpers/branding.py` at import time and used
 | `BRAND_SLUG` | URL-safe and filename-safe identifier used in paths and generated assets | `apollos-ai` | No |
 | `BRAND_URL` | Project website URL displayed in the UI footer and about pages | `https://apollos.ai` | No |
 | `BRAND_GITHUB_URL` | GitHub repository URL used for source links and update checks | `https://github.com/jrmatherly/apollos-ai` | No |
+| `BRAND_UPDATE_CHECK_URL` | URL for update version checks; set to empty string to disable | `https://api.github.com/repos/jrmatherly/apollos-ai/releases/latest` | No |
 
 **Example — custom branding for a white-label deployment:**
 

@@ -8,6 +8,10 @@ class GetBanners(ApiHandler):
     Add checks as extension scripts in python/extensions/banners/ or usr/extensions/banners/
     """
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("system", "read")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         banners = input.get("banners", [])
         frontend_context = input.get("context", {})

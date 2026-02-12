@@ -1,3 +1,7 @@
+import os
+import re
+import tempfile
+
 from python.helpers import branding
 from python.helpers.api import ApiHandler, Request, Response, send_file
 from python.helpers.backup import BackupService
@@ -13,6 +17,10 @@ class BackupCreate(ApiHandler):
     def requires_loopback(cls) -> bool:
         return False
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("admin", "backup")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         try:
             # Get input parameters
@@ -20,6 +28,11 @@ class BackupCreate(ApiHandler):
             exclude_patterns = input.get("exclude_patterns", [])
             include_hidden = input.get("include_hidden", True)
             backup_name = input.get("backup_name", f"{branding.BRAND_SLUG}-backup")
+
+            # Sanitize backup_name at the API boundary to prevent path traversal
+            backup_name = (
+                re.sub(r"[^\w\-]", "_", backup_name) or f"{branding.BRAND_SLUG}-backup"
+            )
 
             # Support legacy string patterns format for backward compatibility
             patterns_string = input.get("patterns", "")
@@ -48,9 +61,15 @@ class BackupCreate(ApiHandler):
                 backup_name=backup_name,
             )
 
+            # Validate zip_path is within the system temp directory
+            zip_real = os.path.realpath(zip_path)
+            temp_base = os.path.realpath(tempfile.gettempdir())
+            if not zip_real.startswith(temp_base + os.sep):
+                return {"success": False, "error": "Invalid backup path"}
+
             # Return file for download
             return send_file(
-                zip_path,
+                zip_real,
                 as_attachment=True,
                 download_name=f"{backup_name}.zip",
                 mimetype="application/zip",

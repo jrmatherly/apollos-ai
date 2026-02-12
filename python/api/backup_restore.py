@@ -16,6 +16,10 @@ class BackupRestore(ApiHandler):
     def requires_loopback(cls) -> bool:
         return False
 
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("admin", "backup")
+
     async def process(self, input: dict, request: Request) -> dict | Response:
         # Handle file upload
         if "backup_file" not in request.files:

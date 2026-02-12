@@ -6,6 +6,10 @@ from python.helpers.api import ApiHandler, Input, Output, Request
 
 
 class FileInfoApi(ApiHandler):
+    @classmethod
+    def get_required_permission(cls) -> tuple[str, str] | None:
+        return ("workdir", "read")
+
     async def process(self, input: Input, request: Request) -> Output:
         path = input.get("path", "")
         info = await runtime.call_development_function(get_file_info, path)
