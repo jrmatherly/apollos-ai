@@ -36,9 +36,10 @@
 └──────────────┘ └───────────┘ └────────────────────────┘
             │
 ┌───────────▼──────────────────────────────────────────────────┐
-│                   python/helpers/ (84 modules)                │
+│                   python/helpers/ (89 modules)                │
 │  Memory (FAISS) | Shell (local/SSH/Docker) | MCP (client/srv)│
-│  Settings | Skills | History | Tokens | Search | Browser     │
+│  Auth (OIDC+local) | Settings | Skills | History | Tokens    │
+│  Search | Browser | vault_crypto | user_store | auth_db      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,3 +89,31 @@ Agent communicates via **JSON responses**:
 - Each agent can spawn subordinates via `call_subordinate` tool
 - Subordinates report back to their superior
 - Profiles specialize subordinates for specific tasks
+
+## Authentication Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Login Flow                                 │
+│  /login (GET) → login.html (dual: SSO + local form)         │
+│  /login (POST) → AuthManager.login_local() or legacy HMAC   │
+│  /login/entra → MSAL auth-code flow → /auth/callback        │
+│  /auth/callback → process_callback() → establish_session()   │
+└───────────┬─────────────────────────────────────────────────┘
+            │
+┌───────────▼─────────────────────────────────────────────────┐
+│  AuthManager (python/helpers/auth.py)                        │
+│  - EntraID OIDC (MSAL ConfidentialClientApplication)         │
+│  - PersistentTokenCache (AES-256-GCM encrypted at rest)      │
+│  - Local login via user_store (Argon2id password hashing)    │
+│  - Session fixation prevention (session.clear on login)      │
+│  - Backward compat: legacy AUTH_LOGIN/AUTH_PASSWORD           │
+└───────────┬─────────────────────────────────────────────────┘
+            │
+┌───────────▼─────────────────────────────────────────────────┐
+│  Auth Database (auth_db.py + user_store.py + Alembic)        │
+│  8 tables: users, organizations, teams, memberships, vault   │
+│  JIT user provisioning from OIDC claims on first login       │
+│  Entra group → team sync (including >200 group overage)      │
+└─────────────────────────────────────────────────────────────┘
+```

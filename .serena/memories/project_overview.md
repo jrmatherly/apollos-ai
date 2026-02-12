@@ -32,7 +32,7 @@ Apollos AI is a personal, organic agentic AI framework that grows and learns wit
 - `initialize.py` — Agent initialization and config management
 - `run_ui.py` — Flask/uvicorn web server entry point
 - `python/tools/` — 19 agent tools (code execution, memory, search, browser, etc.)
-- `python/helpers/` — 84 utility modules (files, docker, SSH, memory, MCP, branding, etc.)
+- `python/helpers/` — 89 utility modules (files, docker, SSH, memory, MCP, branding, auth, vault, etc.)
 - `python/api/` — ~75 REST API endpoint handlers (auto-discovered from folder)
 - `python/websocket_handlers/` — 4 WebSocket event handlers (namespace-based discovery)
 - `python/extensions/` — 41 extensions across 24 lifecycle hook points
@@ -55,6 +55,21 @@ Apollos AI is a personal, organic agentic AI framework that grows and learns wit
 - **Memory**: Persistent vector-DB-based memory with FAISS (configurable embeddings: local or remote via LiteLLM)
 - **Branding**: Centralized `python/helpers/branding.py` with 4 env vars; frontend Alpine.js store; prompt `{{brand_name}}` injection
 - **Prompt-driven**: Behavior is defined by prompts in `prompts/` folder, fully customizable
+
+## Authentication System (Phase 0+1)
+- **Auth database**: SQLAlchemy + Alembic (`auth_db.py`, `user_store.py`, `alembic/versions/001_initial_schema.py`)
+  - 8 tables: organizations, teams, users, org_memberships, team_memberships, chat_ownership, api_key_vault, entra_group_mappings
+  - Default: SQLite at `usr/auth.db`; supports PostgreSQL for production
+- **Encryption**: AES-256-GCM via `vault_crypto.py` with HKDF-derived keys from `VAULT_MASTER_KEY`
+- **EntraID OIDC SSO**: MSAL confidential client auth-code flow (`auth.py` AuthManager)
+  - PersistentTokenCache encrypted at rest via vault_crypto
+  - Group overage handling (>200 groups → Graph API pagination)
+- **Local login**: Username/password fallback via `user_store.verify_password()` (Argon2id)
+- **Legacy compat**: AUTH_LOGIN/AUTH_PASSWORD still works; session["authentication"] key preserved
+- **Session structure**: `session["user"] = {id, email, name, auth_method}`, `session["authentication"] = True`
+- **Bootstrap**: `auth_bootstrap.py` runs Alembic migrations + creates admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+- **Dual login UI**: `webui/login.html` shows SSO button (if OIDC configured) + local form
+- **Routes**: `/login` (GET/POST), `/login/entra`, `/auth/callback`, `/logout`
 
 ## GitHub
 - **Remote**: `jrmatherly/apollos-ai` (fork of `agent0ai/agent-zero`)

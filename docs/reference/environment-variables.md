@@ -33,6 +33,43 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
+## Multi-User Auth Database
+
+The multi-user authentication system uses SQLAlchemy with an SQLite (or PostgreSQL) database to store users, organizations, teams, and API key vault entries. Managed by `python/helpers/auth_db.py` and `python/helpers/user_store.py`.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `AUTH_DATABASE_URL` | SQLAlchemy connection string for the auth database | SQLAlchemy URL | `sqlite:///usr/auth.db` | No |
+| `VAULT_MASTER_KEY` | Master encryption key for the API key vault (AES-256-GCM via `python/helpers/vault_crypto.py`). Required for OIDC token cache encryption. | 64-char hex string (256 bits) | *(none)* | For OIDC + vault |
+| `ADMIN_EMAIL` | Bootstrap admin email; creates an admin account on first launch if set | Email address | *(none)* | No |
+| `ADMIN_PASSWORD` | Bootstrap admin password; used with `ADMIN_EMAIL` on first launch | Any string | *(none)* | With `ADMIN_EMAIL` |
+
+**Generating secure values:**
+
+```bash
+# VAULT_MASTER_KEY — 256-bit AES key (64-char hex)
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+## EntraID OIDC SSO
+
+Microsoft Entra ID (Azure AD) app registration for single sign-on via OIDC authorization-code flow. Managed by `python/helpers/auth.py` (AuthManager). When all four OIDC variables are set, the login page shows a "Sign in with Microsoft" SSO button alongside the local login form.
+
+| Variable | Description | Values | Default | Required |
+|----------|-------------|--------|---------|----------|
+| `OIDC_TENANT_ID` | Microsoft Entra tenant ID | UUID | *(none)* | For OIDC |
+| `OIDC_CLIENT_ID` | Entra app registration client ID | UUID | *(none)* | For OIDC |
+| `OIDC_CLIENT_SECRET` | Entra app registration client secret | String | *(none)* | For OIDC |
+| `OIDC_REDIRECT_URI` | Explicit OIDC callback URL; auto-generated from Flask `url_for` if unset. Set explicitly in production behind a reverse proxy. | URL | *(auto: `/auth/callback`)* | No |
+
+**Setup steps:**
+
+1. Register an app in Microsoft Entra ID (Azure Portal > App registrations)
+2. Set redirect URI to `https://your-domain/auth/callback`
+3. Create a client secret
+4. Set `OIDC_TENANT_ID`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` in `usr/.env`
+5. Set `VAULT_MASTER_KEY` for encrypted MSAL token cache persistence
+
 ## Server & Networking
 
 | Variable | Description | Values | Default | Required |
