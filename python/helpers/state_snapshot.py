@@ -10,6 +10,7 @@ from agent import AgentContext, AgentContextType
 from python.helpers.dotenv import get_dotenv_value
 from python.helpers.localization import Localization
 from python.helpers.task_scheduler import TaskScheduler
+from python.helpers.tenant import SYSTEM_USER_ID
 
 
 class SnapshotV1(TypedDict):
@@ -214,8 +215,14 @@ def advance_state_request_after_snapshot(
     )
 
 
-async def build_snapshot_from_request(*, request: StateRequestV1) -> SnapshotV1:
-    """Build a poll-shaped snapshot for both /poll and state_push."""
+async def build_snapshot_from_request(
+    *, request: StateRequestV1, user_id: str | None = None
+) -> SnapshotV1:
+    """Build a poll-shaped snapshot for both /poll and state_push.
+
+    When user_id is provided and is not the system user, only contexts
+    owned by that user are included in the snapshot.
+    """
 
     Localization.get().set_timezone(request.timezone)
 
@@ -240,12 +247,20 @@ async def build_snapshot_from_request(*, request: StateRequestV1) -> SnapshotV1:
     tasks: list[dict[str, Any]] = []
     processed_contexts: set[str] = set()
 
+    # Filter contexts to current user (skip filtering for system user or no-auth)
+    _filter_by_user = user_id and user_id != SYSTEM_USER_ID
+
     all_ctxs = AgentContext.all()
     for ctx in all_ctxs:
         if ctx.id in processed_contexts:
             continue
 
         if ctx.type == AgentContextType.BACKGROUND:
+            processed_contexts.add(ctx.id)
+            continue
+
+        # Skip contexts not owned by the current user
+        if _filter_by_user and ctx.user_id != user_id:
             processed_contexts.add(ctx.id)
             continue
 
@@ -316,6 +331,7 @@ async def build_snapshot(
     log_from: int,
     notifications_from: int,
     timezone: str | None,
+    user_id: str | None = None,
 ) -> SnapshotV1:
     request = _coerce_state_request_inputs(
         context=context,
@@ -323,4 +339,4 @@ async def build_snapshot(
         notifications_from=notifications_from,
         timezone=timezone,
     )
-    return await build_snapshot_from_request(request=request)
+    return await build_snapshot_from_request(request=request, user_id=user_id)

@@ -49,6 +49,8 @@ class ConnectionProjection:
     dirty_reason: str | None = None
     dirty_wave_id: str | None = None
     created_at: float = field(default_factory=time.time)
+    # User isolation: user_id associated with this connection
+    user_id: str | None = None
 
 
 class StateMonitor:
@@ -79,11 +81,14 @@ class StateMonitor:
             f"[StateMonitor] bind_manager handler_id={handler_id or self._emit_handler_id}"
         )
 
-    def register_sid(self, namespace: str, sid: str) -> None:
+    def register_sid(
+        self, namespace: str, sid: str, *, user_id: str | None = None
+    ) -> None:
         identity: ConnectionIdentity = (namespace, sid)
         with self._lock:
             self._projections.setdefault(
-                identity, ConnectionProjection(namespace=namespace, sid=sid)
+                identity,
+                ConnectionProjection(namespace=namespace, sid=sid, user_id=user_id),
             )
         _debug_log(f"[StateMonitor] register_sid namespace={namespace} sid={sid}")
 
@@ -271,7 +276,9 @@ class StateMonitor:
                 dirty_reason = projection.dirty_reason
                 dirty_wave_id = projection.dirty_wave_id
 
-            snapshot = await build_snapshot_from_request(request=request)
+            snapshot = await build_snapshot_from_request(
+                request=request, user_id=projection.user_id
+            )
 
             with self._lock:
                 projection = self._projections.get(identity)

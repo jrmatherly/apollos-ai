@@ -73,6 +73,7 @@
             id: "{{runtime_id}}",
             isDevelopment: "{{runtime_is_development}}" === "true",
             loggedIn: "{{logged_in}}" === "true",
+            user: "{{user_json}}" !== "" ? JSON.parse("{{user_json}}") : null,
         };
     </script>
 </head>

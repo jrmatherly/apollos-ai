@@ -518,6 +518,12 @@ def get_secrets_manager(context: "AgentContext|None" = None) -> SecretsManager:
 
         context = AgentContext.current()
 
+    # user-level secrets (between system and project)
+    if context and hasattr(context, "tenant_ctx") and context.tenant_ctx is not None:
+        if not context.tenant_ctx.is_system:
+            user_secrets = files.get_abs_path(context.tenant_ctx.secrets_file)
+            secret_files.append(user_secrets)
+
     # merged with project secrets if active
     if context:
         project = projects.get_context_project_name(context)

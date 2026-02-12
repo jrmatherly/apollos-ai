@@ -18,7 +18,12 @@ class UploadFile(ApiHandler):
                 filename = safe_filename(file.filename)
                 if not filename:
                     continue
-                file.save(files.get_abs_path("usr/uploads", filename))
+                tenant_ctx = self._get_tenant_ctx()
+                if not tenant_ctx.is_system:
+                    uploads_dir = tenant_ctx.uploads_dir
+                else:
+                    uploads_dir = "usr/uploads"
+                file.save(files.get_abs_path(uploads_dir, filename))
                 saved_filenames.append(filename)
 
         return {"filenames": saved_filenames}  # Return saved filenames

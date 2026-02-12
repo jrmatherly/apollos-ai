@@ -16,8 +16,10 @@ class RemoveChat(ApiHandler):
             # stop processing any tasks
             context.reset()
 
+        # Resolve context for user-scoped path before removing
+        resolved_ctx = AgentContext.get(ctxid)
         AgentContext.remove(ctxid)
-        persist_chat.remove_chat(ctxid)
+        persist_chat.remove_chat(ctxid, resolved_ctx)
 
         await scheduler.reload()
 

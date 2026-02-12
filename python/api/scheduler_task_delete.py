@@ -45,7 +45,7 @@ class SchedulerTaskDelete(ApiHandler):
         # This is a dedicated context for the task, so we remove it
         if context and context.id == task.uuid:
             AgentContext.remove(context.id)
-            persist_chat.remove_chat(context.id)
+            persist_chat.remove_chat(context.id, context)
 
         # Remove the task
         await scheduler.remove_task_by_uuid(task_id)

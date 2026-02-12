@@ -388,7 +388,9 @@ class BrowserAgent(Tool):
                     result["log"] = get_use_agent_log(ua)
 
                     path = files.get_abs_path(
-                        persist_chat.get_chat_folder_path(agent.context.id),
+                        persist_chat.get_chat_folder_path(
+                            agent.context.id, agent.context
+                        ),
                         "browser",
                         "screenshots",
                         f"{self.guid}.png",

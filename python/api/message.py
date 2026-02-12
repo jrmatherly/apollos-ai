@@ -29,10 +29,13 @@ class Message(ApiHandler):
             attachments = request.files.getlist("attachments")
             attachment_paths = []
 
-            upload_folder_int = "/a0/usr/uploads"
-            upload_folder_ext = files.get_abs_path(
-                "usr/uploads"
-            )  # for development environment
+            tenant_ctx = self._get_tenant_ctx()
+            if not tenant_ctx.is_system:
+                uploads_rel = tenant_ctx.uploads_dir
+            else:
+                uploads_rel = "usr/uploads"
+            upload_folder_int = f"/a0/{uploads_rel}"
+            upload_folder_ext = files.get_abs_path(uploads_rel)
 
             if attachments:
                 os.makedirs(upload_folder_ext, exist_ok=True)

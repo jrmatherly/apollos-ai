@@ -3,8 +3,11 @@ from agent import AgentConfig
 from python.helpers import defer, runtime, settings
 
 
-def initialize_agent(override_settings: dict | None = None):
-    current_settings = settings.get_settings()
+def initialize_agent(override_settings: dict | None = None, tenant_ctx=None):
+    if tenant_ctx is not None and not tenant_ctx.is_system:
+        current_settings = settings.get_settings_for_tenant(tenant_ctx)
+    else:
+        current_settings = settings.get_settings()
     if override_settings:
         current_settings = settings.merge_settings(current_settings, override_settings)
 
@@ -160,6 +163,11 @@ def initialize_migration():
     dotenv.load_dotenv()
     # reload settings to ensure new paths are picked up
     settings.reload_settings()
+
+    # Multi-user migration: create usr/orgs/ layout if not present
+    from python.helpers.multiuser_migration import migrate_to_multiuser
+
+    migrate_to_multiuser()
 
 
 def _args_override(config):

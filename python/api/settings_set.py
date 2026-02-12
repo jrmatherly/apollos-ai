@@ -10,6 +10,10 @@ class SetSettings(ApiHandler):
     ) -> dict[Any, Any] | Response:
         frontend = input.get("settings", input)
         backend = settings.convert_in(settings.Settings(**frontend))
-        backend = settings.set_settings(backend)
+        tenant_ctx = self._get_tenant_ctx()
+        if not tenant_ctx.is_system:
+            backend = settings.set_settings_for_tenant(backend, tenant_ctx)
+        else:
+            backend = settings.set_settings(backend)
         out = settings.convert_out(backend)
         return dict(out)

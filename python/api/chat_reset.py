@@ -14,7 +14,7 @@ class Reset(ApiHandler):
         context = self.use_context(ctxid)
         context.reset()
         persist_chat.save_tmp_chat(context)
-        persist_chat.remove_msg_files(ctxid)
+        persist_chat.remove_msg_files(ctxid, context)
 
         # Reset updates context metadata (log guid/version) and must refresh other tabs' lists.
         from python.helpers.state_monitor_integration import mark_dirty_all

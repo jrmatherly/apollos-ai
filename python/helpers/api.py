@@ -17,6 +17,7 @@ from initialize import initialize_agent
 from python.helpers import runtime
 from python.helpers.errors import format_error
 from python.helpers.print_style import PrintStyle
+from python.helpers.tenant import SYSTEM_USER_ID, TenantContext
 
 ThreadLockType = Union[threading.Lock, threading.RLock]
 
@@ -98,23 +99,63 @@ class ApiHandler:
                     mimetype="application/json",
                 )
 
+    def _get_tenant_ctx(self) -> TenantContext:
+        """Build TenantContext from g.current_user (set by handle_request)."""
+        try:
+            user = g.current_user if hasattr(g, "current_user") else None
+        except RuntimeError:
+            user = None
+        return TenantContext.from_session_user(user)
+
+    def _get_user_id(self) -> str | None:
+        """Return user_id from g.current_user, or None for no-auth."""
+        try:
+            user = g.current_user if hasattr(g, "current_user") else None
+        except RuntimeError:
+            user = None
+        if user:
+            return str(user.get("id", SYSTEM_USER_ID))
+        return None
+
     # get context to run apollos ai in
     def use_context(self, ctxid: str, create_if_not_exists: bool = True):
+        tenant_ctx = self._get_tenant_ctx()
+        user_id = self._get_user_id()
+
         with self.thread_lock:
             if not ctxid:
-                first = AgentContext.first()
+                # Find first context for this user, or create one
+                first = (
+                    AgentContext.first_for_user(user_id)
+                    if user_id
+                    else AgentContext.first()
+                )
                 if first:
                     AgentContext.use(first.id)
                     return first
-                context = AgentContext(config=initialize_agent(), set_current=True)
+                context = AgentContext(
+                    config=initialize_agent(tenant_ctx=tenant_ctx),
+                    set_current=True,
+                    user_id=user_id,
+                    tenant_ctx=tenant_ctx,
+                )
+                tenant_ctx.ensure_dirs()
                 return context
             got = AgentContext.use(ctxid)
             if got:
+                # Ownership check: non-system users can only access their own contexts
+                if user_id and got.user_id and got.user_id != user_id:
+                    raise Exception(f"Access denied to context {ctxid}")
                 return got
             if create_if_not_exists:
                 context = AgentContext(
-                    config=initialize_agent(), id=ctxid, set_current=True
+                    config=initialize_agent(tenant_ctx=tenant_ctx),
+                    id=ctxid,
+                    set_current=True,
+                    user_id=user_id,
+                    tenant_ctx=tenant_ctx,
                 )
+                tenant_ctx.ensure_dirs()
                 return context
             else:
                 raise Exception(f"Context {ctxid} not found")

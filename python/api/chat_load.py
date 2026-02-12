@@ -8,7 +8,11 @@ class LoadChats(ApiHandler):
         if not chats:
             raise Exception("No chats provided")
 
-        ctxids = persist_chat.load_json_chats(chats)
+        tenant_ctx = self._get_tenant_ctx()
+        user_id = self._get_user_id()
+        ctxids = persist_chat.load_json_chats(
+            chats, user_id=user_id, tenant_ctx=tenant_ctx
+        )
 
         return {
             "message": "Chats loaded.",

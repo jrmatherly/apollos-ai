@@ -161,7 +161,7 @@ class SchedulerTool(Tool):
 
         if context and context.id == task.uuid:
             AgentContext.remove(context.id)
-            persist_chat.remove_chat(context.id)
+            persist_chat.remove_chat(context.id, context)
 
         await TaskScheduler.get().remove_task_by_uuid(task_uuid)
         if TaskScheduler.get().get_task_by_uuid(task_uuid) is None:

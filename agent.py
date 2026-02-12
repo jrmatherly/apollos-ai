@@ -12,7 +12,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Awaitable, Callable, Coroutine, Dict
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Coroutine, Dict
 
 from langchain_core.messages import BaseMessage, SystemMessage
 from langchain_core.prompts import (
@@ -37,6 +37,9 @@ from python.helpers.errors import RepairableException
 from python.helpers.extension import call_extensions
 from python.helpers.localization import Localization
 from python.helpers.print_style import PrintStyle
+
+if TYPE_CHECKING:
+    from python.helpers.tenant import TenantContext
 
 
 class AgentContextType(Enum):
@@ -66,6 +69,8 @@ class AgentContext:
         data: dict | None = None,
         output_data: dict | None = None,
         set_current: bool = False,
+        user_id: str | None = None,
+        tenant_ctx: "TenantContext | None" = None,
     ):
         # initialize context
         self.id = id or AgentContext.generate_id()
@@ -95,6 +100,8 @@ class AgentContext:
         AgentContext._counter += 1
         self.no = AgentContext._counter
         self.last_message = last_message or datetime.now(timezone.utc)
+        self.user_id = user_id
+        self.tenant_ctx: TenantContext | None = tenant_ctx
 
         # initialize agent at last (context is complete now)
         self.apollos = apollos or Agent(0, self.config, self)
@@ -135,6 +142,23 @@ class AgentContext:
     def all():
         with AgentContext._contexts_lock:
             return list(AgentContext._contexts.values())
+
+    @staticmethod
+    def first_for_user(user_id: str | None):
+        """Return the first context owned by the given user_id, or None."""
+        with AgentContext._contexts_lock:
+            for ctx in AgentContext._contexts.values():
+                if ctx.user_id == user_id:
+                    return ctx
+        return None
+
+    @staticmethod
+    def all_for_user(user_id: str | None):
+        """Return all contexts owned by the given user_id."""
+        with AgentContext._contexts_lock:
+            return [
+                ctx for ctx in AgentContext._contexts.values() if ctx.user_id == user_id
+            ]
 
     @staticmethod
     def generate_id():
@@ -183,6 +207,7 @@ class AgentContext:
         return {
             "id": self.id,
             "name": self.name,
+            "user_id": self.user_id,
             "created_at": (
                 Localization.get().serialize_datetime(self.created_at)
                 if self.created_at

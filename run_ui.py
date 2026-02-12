@@ -363,6 +363,22 @@ async def serve_index():
             "commit_time": "unknown",
         }
     index = files.read_file("webui/index.html")
+
+    # Build safe user JSON for frontend (no sensitive fields)
+    user_info = session.get("user")
+    if user_info and session.get("authentication"):
+        import json as _json
+
+        safe_user = {
+            "id": user_info.get("id", ""),
+            "email": user_info.get("email", ""),
+            "name": user_info.get("name", ""),
+            "auth_method": user_info.get("auth_method", ""),
+        }
+        user_json = _json.dumps(safe_user).replace('"', '\\"')
+    else:
+        user_json = ""
+
     index = files.replace_placeholders_text(
         _content=index,
         version_no=gitinfo["version"],
@@ -374,6 +390,7 @@ async def serve_index():
             if session.get("authentication") or login.get_credentials_hash()
             else "false"
         ),
+        user_json=user_json,
     )
     return index
 

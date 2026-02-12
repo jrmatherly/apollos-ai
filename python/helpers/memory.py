@@ -20,11 +20,15 @@ from langchain_core.documents import Document
 from simpleeval import simple_eval
 
 import models
-from models import EMBEDDING_BATCH_SIZE
 from agent import Agent, AgentContext
+from models import EMBEDDING_BATCH_SIZE
 
 # faiss needs to be patched for python 3.12 on arm #TODO remove once not needed
-from python.helpers import faiss_monkey_patch, guids, knowledge_import  # noqa: F401 — faiss_monkey_patch is a side-effect import (patches numpy for faiss on 3.12/ARM)
+from python.helpers import (  # noqa: F401 — faiss_monkey_patch is a side-effect import (patches numpy for faiss on 3.12/ARM)
+    faiss_monkey_patch,
+    guids,
+    knowledge_import,
+)
 from python.helpers.log import LogItem
 from python.helpers.print_style import PrintStyle
 
@@ -499,6 +503,9 @@ def abs_db_dir(memory_subdir: str) -> str:
         from python.helpers.projects import get_project_meta_folder
 
         return files.get_abs_path(get_project_meta_folder(memory_subdir[9:]), "memory")
+    # tenant-scoped memory: orgs/{org}/teams/{team}/members/{user}/default
+    if memory_subdir.startswith("orgs/"):
+        return files.get_abs_path("usr", memory_subdir, "memory")
     # standard subdirs
     return files.get_abs_path("usr/memory", memory_subdir)
 
@@ -538,6 +545,14 @@ def get_context_memory_subdir(context: AgentContext) -> str:
     memory_subdir = get_project_memory_subdir(context)
     if memory_subdir:
         return memory_subdir
+
+    # tenant-scoped memory for authenticated users
+    if (
+        hasattr(context, "tenant_ctx")
+        and context.tenant_ctx is not None
+        and not context.tenant_ctx.is_system
+    ):
+        return context.tenant_ctx.memory_subdir
 
     # no project, regular memory subdir
     return context.config.memory_subdir or "default"
