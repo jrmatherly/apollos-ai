@@ -1,0 +1,252 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/components/admin/admin-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.admin && $store.admin.isOpen">
+      <div class="admin-overlay" @click.self="$store.admin.close()">
+        <div class="admin-panel">
+          <!-- Header -->
+          <div class="admin-header">
+            <h2>Administration</h2>
+            <button class="admin-close-btn" @click="$store.admin.close()" title="Close">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tab navigation -->
+          <nav class="admin-tabs">
+            <template x-for="tab in $store.admin.tabs" :key="tab.id">
+              <button class="admin-tab"
+                :class="{ 'active': $store.admin.activeTab === tab.id }"
+                @click="$store.admin.setTab(tab.id)"
+                x-text="tab.label"></button>
+            </template>
+          </nav>
+
+          <!-- Error banner -->
+          <template x-if="$store.admin.error">
+            <div class="admin-error">
+              <span x-text="$store.admin.error"></span>
+              <button @click="$store.admin.error = null">Dismiss</button>
+            </div>
+          </template>
+
+          <!-- Tab content -->
+          <div class="admin-content">
+            <template x-if="$store.admin.activeTab === 'orgs'">
+              <x-component path="admin/admin-orgs.html"></x-component>
+            </template>
+            <template x-if="$store.admin.activeTab === 'teams'">
+              <x-component path="admin/admin-teams.html"></x-component>
+            </template>
+            <template x-if="$store.admin.activeTab === 'users'">
+              <x-component path="admin/admin-users.html"></x-component>
+            </template>
+            <template x-if="$store.admin.activeTab === 'groups'">
+              <x-component path="admin/admin-groups.html"></x-component>
+            </template>
+            <template x-if="$store.admin.activeTab === 'keys'">
+              <x-component path="admin/admin-keys.html"></x-component>
+            </template>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <style>
+    .admin-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .admin-panel {
+      background: var(--color-panel);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      width: 90vw;
+      max-width: 900px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .admin-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .admin-close-btn {
+      background: none;
+      border: none;
+      color: var(--color-text);
+      cursor: pointer;
+      padding: 4px;
+      opacity: 0.7;
+    }
+    .admin-close-btn:hover { opacity: 1; }
+    .admin-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      overflow-x: auto;
+    }
+    .admin-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0.6rem 0.8rem;
+      opacity: 0.6;
+      white-space: nowrap;
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+    .admin-tab:hover { opacity: 0.85; }
+    .admin-tab.active {
+      opacity: 1;
+      border-bottom-color: var(--color-primary);
+    }
+    .admin-error {
+      background: rgba(220, 53, 69, 0.15);
+      color: #ff6b6b;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem 1.5rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-error button {
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 0.75rem;
+      text-decoration: underline;
+    }
+    .admin-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 1.5rem;
+    }
+    /* Shared admin table styles */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .admin-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+      font-weight: 600;
+      opacity: 0.7;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .admin-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--color-border);
+      opacity: 0.85;
+    }
+    .admin-table tr:hover td { opacity: 1; }
+    .admin-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .admin-btn {
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .admin-btn:hover { opacity: 0.85; }
+    .admin-btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+    .admin-btn-danger {
+      background: #dc3545;
+    }
+    .admin-btn-secondary {
+      background: var(--color-border);
+      color: var(--color-text);
+    }
+    .admin-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding: 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .admin-form label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .admin-form input,
+    .admin-form select {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      color: var(--color-text);
+      padding: 0.4rem 0.6rem;
+      font-size: 0.8rem;
+    }
+    .admin-form-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 0.25rem;
+    }
+    .admin-loading {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.5;
+      font-size: 0.85rem;
+    }
+    .admin-empty {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.4;
+      font-size: 0.85rem;
+    }
+    .admin-actions {
+      display: flex;
+      gap: 0.3rem;
+    }
+  </style>
+</body>
+</html>

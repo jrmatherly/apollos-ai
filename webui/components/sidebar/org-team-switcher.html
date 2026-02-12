@@ -1,0 +1,210 @@
+<html>
+<head>
+  <script type="module">
+    import { createStore } from "/js/AlpineStore.js";
+    import { callJsonApi } from "/js/api.js";
+
+    const model = {
+      currentOrgId: null,
+      currentTeamId: null,
+      currentOrgName: "",
+      currentTeamName: "",
+      memberships: [],
+      loading: false,
+      expanded: false,
+
+      get label() {
+        if (!this.currentOrgName) return "";
+        const team = this.currentTeamName && this.currentTeamName !== "default"
+          ? ` / ${this.currentTeamName}` : "";
+        return `${this.currentOrgName}${team}`;
+      },
+
+      get hasMultipleContexts() {
+        if (this.memberships.length > 1) return true;
+        if (this.memberships.length === 1 && this.memberships[0].teams.length > 1) return true;
+        return false;
+      },
+
+      async init() {
+        try {
+          const res = await callJsonApi("/user_profile", {});
+          if (res.user && res.memberships) {
+            this.memberships = res.memberships;
+            // Set initial context from first membership
+            if (res.memberships.length > 0) {
+              const first = res.memberships[0];
+              this.currentOrgId = first.org_id;
+              this.currentOrgName = first.org_name;
+              if (first.teams.length > 0) {
+                this.currentTeamId = first.teams[0].team_id;
+                this.currentTeamName = first.teams[0].team_name;
+              }
+            }
+          }
+        } catch {
+          // Auth not configured or not logged in — silently skip
+        }
+      },
+
+      async switchContext(orgId, orgName, teamId, teamName) {
+        this.loading = true;
+        try {
+          await callJsonApi("/switch_context", { org_id: orgId, team_id: teamId });
+          this.currentOrgId = orgId;
+          this.currentOrgName = orgName;
+          this.currentTeamId = teamId;
+          this.currentTeamName = teamName;
+          this.expanded = false;
+          // Reload settings after context switch
+          if (window.Alpine?.store("settings")?.loadSettings) {
+            window.Alpine.store("settings").loadSettings();
+          }
+        } catch (e) {
+          console.error("Context switch failed:", e);
+        }
+        this.loading = false;
+      },
+
+      toggle() {
+        this.expanded = !this.expanded;
+      },
+    };
+
+    createStore("orgTeamSwitcher", model);
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.orgTeamSwitcher && $store.orgTeamSwitcher.label && $store.orgTeamSwitcher.hasMultipleContexts">
+      <div class="ctx-switcher">
+        <button class="ctx-current" @click="$store.orgTeamSwitcher.toggle()"
+          :class="{ 'expanded': $store.orgTeamSwitcher.expanded }">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" style="flex-shrink:0; opacity:0.5">
+            <path d="M3 9l9 3 9-3-9-3-9 3z" /><path d="M3 15l9 3 9-3" />
+          </svg>
+          <span class="ctx-label" x-text="$store.orgTeamSwitcher.label"></span>
+          <svg class="ctx-chevron" xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        <template x-if="$store.orgTeamSwitcher.expanded">
+          <div class="ctx-dropdown">
+            <template x-for="mem in $store.orgTeamSwitcher.memberships" :key="mem.org_id">
+              <div class="ctx-org-group">
+                <div class="ctx-org-name" x-text="mem.org_name"></div>
+                <template x-for="team in mem.teams" :key="team.team_id">
+                  <button class="ctx-team-btn"
+                    :class="{ 'active': $store.orgTeamSwitcher.currentOrgId === mem.org_id && $store.orgTeamSwitcher.currentTeamId === team.team_id }"
+                    @click="$store.orgTeamSwitcher.switchContext(mem.org_id, mem.org_name, team.team_id, team.team_name)">
+                    <span x-text="team.team_name"></span>
+                    <span class="ctx-role" x-text="team.role"></span>
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <style>
+    .ctx-switcher {
+      position: relative;
+      margin: 0 0 0.25rem 0;
+    }
+    .ctx-current {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      width: 100%;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 0.25rem 0.4rem;
+      opacity: 0.7;
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+    .ctx-current:hover {
+      opacity: 0.9;
+      border-color: var(--color-border);
+    }
+    .ctx-label {
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ctx-chevron {
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: transform 0.15s;
+    }
+    .ctx-current.expanded .ctx-chevron {
+      transform: rotate(180deg);
+    }
+    .ctx-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-panel);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 100;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 0.25rem;
+    }
+    .ctx-org-group {
+      padding: 0.15rem 0;
+    }
+    .ctx-org-group + .ctx-org-group {
+      border-top: 1px solid var(--color-border);
+    }
+    .ctx-org-name {
+      font-size: 0.65rem;
+      font-weight: 600;
+      opacity: 0.5;
+      padding: 0.2rem 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .ctx-team-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: none;
+      border: none;
+      border-radius: 4px;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.4rem;
+      opacity: 0.7;
+    }
+    .ctx-team-btn:hover {
+      background: rgba(255,255,255,0.05);
+      opacity: 0.9;
+    }
+    .ctx-team-btn.active {
+      opacity: 1;
+      background: rgba(255,255,255,0.08);
+    }
+    .ctx-role {
+      font-size: 0.6rem;
+      opacity: 0.4;
+    }
+  </style>
+</body>
+</html>

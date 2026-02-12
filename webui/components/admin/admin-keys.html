@@ -1,0 +1,79 @@
+<html>
+<body>
+  <div x-data="{ form: { owner_type: 'org', owner_id: '', key_name: '', value: '' }, scopeLabel: '' }">
+    <div class="admin-toolbar">
+      <span style="font-size:0.85rem; font-weight:500;">
+        API Key Vault
+        <template x-if="$store.admin.selectedOrgId">
+          <span style="opacity:0.6" x-text="' (Org: ' + ($store.admin.orgs.find(o => o.id === $store.admin.selectedOrgId) || {}).name + ')'"></span>
+        </template>
+      </span>
+      <button class="admin-btn admin-btn-sm"
+        @click="$store.admin.showForm = !$store.admin.showForm; form = { owner_type: $store.admin.selectedOrgId ? 'org' : 'system', owner_id: $store.admin.selectedOrgId || 'system', key_name: '', value: '' }">
+        + Add Key
+      </button>
+    </div>
+
+    <template x-if="$store.admin.showForm">
+      <div class="admin-form">
+        <label>Scope</label>
+        <select x-model="form.owner_type"
+          @change="form.owner_id = form.owner_type === 'system' ? 'system' : ($store.admin.selectedOrgId || '')">
+          <option value="system">System-wide</option>
+          <option value="org">Organization</option>
+          <option value="team">Team</option>
+        </select>
+        <label>Key Name</label>
+        <input type="text" x-model="form.key_name" placeholder="OPENAI_API_KEY">
+        <label>Value</label>
+        <input type="password" x-model="form.value" placeholder="sk-...">
+        <div class="admin-form-actions">
+          <button class="admin-btn admin-btn-secondary admin-btn-sm"
+            @click="$store.admin.showForm = false">Cancel</button>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.storeVaultKey(form.owner_type, form.owner_id, form.key_name, form.value)">
+            Store
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="$store.admin.loading">
+      <div class="admin-loading">Loading...</div>
+    </template>
+
+    <template x-if="!$store.admin.loading && $store.admin.vaultKeys.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Key Name</th>
+            <th>Scope</th>
+            <th>Owner</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="key in $store.admin.vaultKeys" :key="key.id">
+            <tr>
+              <td x-text="key.key_name" style="font-family:monospace; font-size:0.75rem"></td>
+              <td x-text="key.owner_type" style="font-size:0.75rem; opacity:0.6"></td>
+              <td x-text="key.owner_id" style="font-size:0.7rem; opacity:0.5; font-family:monospace"></td>
+              <td x-text="key.created_at ? new Date(key.created_at).toLocaleDateString() : '-'"
+                style="font-size:0.75rem; opacity:0.6"></td>
+              <td class="admin-actions">
+                <button class="admin-btn admin-btn-sm admin-btn-danger"
+                  @click="$store.admin.deleteVaultKey(key.id)">Delete</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+
+    <template x-if="!$store.admin.loading && $store.admin.vaultKeys.length === 0">
+      <div class="admin-empty">No API keys stored for this scope.</div>
+    </template>
+  </div>
+</body>
+</html>

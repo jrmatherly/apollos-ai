@@ -1,0 +1,84 @@
+<html>
+<body>
+  <div x-data="{ form: { entra_group_id: '', org_id: '', team_id: '', role: 'member' } }">
+    <template x-if="!$store.admin.selectedOrgId">
+      <div class="admin-empty">Select an organization from the Organizations tab first.</div>
+    </template>
+
+    <template x-if="$store.admin.selectedOrgId">
+      <div>
+        <div class="admin-toolbar">
+          <span style="font-size:0.85rem; font-weight:500;">EntraID Group Mappings</span>
+          <button class="admin-btn admin-btn-sm"
+            @click="$store.admin.showForm = !$store.admin.showForm; form = { entra_group_id: '', org_id: $store.admin.selectedOrgId, team_id: '', role: 'member' }">
+            + Add Mapping
+          </button>
+        </div>
+
+        <template x-if="$store.admin.showForm">
+          <div class="admin-form">
+            <label>EntraID Group GUID</label>
+            <input type="text" x-model="form.entra_group_id" placeholder="00000000-0000-0000-0000-000000000000">
+            <label>Team (optional)</label>
+            <select x-model="form.team_id">
+              <option value="">-- No specific team --</option>
+              <template x-for="team in $store.admin.teams" :key="team.id">
+                <option :value="team.id" x-text="team.name"></option>
+              </template>
+            </select>
+            <label>Role</label>
+            <select x-model="form.role">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="lead">Team Lead</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <div class="admin-form-actions">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm"
+                @click="$store.admin.showForm = false">Cancel</button>
+              <button class="admin-btn admin-btn-sm"
+                @click="$store.admin.upsertGroupMapping(form.entra_group_id, form.org_id, form.team_id || null, form.role)">
+                Save
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="$store.admin.loading">
+          <div class="admin-loading">Loading...</div>
+        </template>
+
+        <template x-if="!$store.admin.loading && $store.admin.groupMappings.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>EntraID Group ID</th>
+                <th>Team</th>
+                <th>Role</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="mapping in $store.admin.groupMappings" :key="mapping.entra_group_id">
+                <tr>
+                  <td x-text="mapping.entra_group_id" style="font-family:monospace; font-size:0.7rem"></td>
+                  <td x-text="mapping.team_id || 'Org-level'"></td>
+                  <td x-text="mapping.role"></td>
+                  <td class="admin-actions">
+                    <button class="admin-btn admin-btn-sm admin-btn-danger"
+                      @click="$store.admin.deleteGroupMapping(mapping.entra_group_id)">Delete</button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+
+        <template x-if="!$store.admin.loading && $store.admin.groupMappings.length === 0">
+          <div class="admin-empty">No group mappings configured.</div>
+        </template>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

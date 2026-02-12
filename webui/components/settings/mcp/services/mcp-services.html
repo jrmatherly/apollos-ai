@@ -1,0 +1,201 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/components/settings/mcp/services/mcp-services-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.mcpServices">
+      <div class="mcp-svc-panel">
+        <div class="mcp-svc-header">
+          <h3>Available MCP Services</h3>
+          <p class="mcp-svc-desc">
+            Connect to approved MCP services managed by your organization.
+          </p>
+        </div>
+
+        <template x-if="$store.mcpServices.error">
+          <div class="mcp-svc-error">
+            <span x-text="$store.mcpServices.error"></span>
+            <button @click="$store.mcpServices.error = null">Dismiss</button>
+          </div>
+        </template>
+
+        <template x-if="$store.mcpServices.loading">
+          <div class="mcp-svc-loading">Loading services...</div>
+        </template>
+
+        <template x-if="!$store.mcpServices.loading && $store.mcpServices.services.length === 0">
+          <div class="mcp-svc-empty">
+            No MCP services are available. Contact your administrator to add services.
+          </div>
+        </template>
+
+        <template x-if="!$store.mcpServices.loading && $store.mcpServices.services.length > 0">
+          <div class="mcp-svc-list">
+            <template x-for="svc in $store.mcpServices.services" :key="svc.id">
+              <div class="mcp-svc-card">
+                <div class="mcp-svc-card-info">
+                  <div class="mcp-svc-card-icon" x-show="svc.icon_url">
+                    <img :src="svc.icon_url" :alt="svc.name" width="24" height="24">
+                  </div>
+                  <div class="mcp-svc-card-icon mcp-svc-card-icon-default" x-show="!svc.icon_url">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+                    </svg>
+                  </div>
+                  <div class="mcp-svc-card-text">
+                    <span class="mcp-svc-name" x-text="svc.name"></span>
+                    <span class="mcp-svc-type" x-text="svc.transport_type"></span>
+                  </div>
+                </div>
+                <div class="mcp-svc-card-actions">
+                  <template x-if="$store.mcpServices.isConnected(svc.id)">
+                    <div class="mcp-svc-connected">
+                      <span class="mcp-svc-status-dot connected"></span>
+                      <span>Connected</span>
+                      <button class="mcp-svc-btn mcp-svc-btn-disconnect"
+                        @click="$store.mcpServices.disconnect(svc.id)">
+                        Disconnect
+                      </button>
+                    </div>
+                  </template>
+                  <template x-if="!$store.mcpServices.isConnected(svc.id)">
+                    <button class="mcp-svc-btn mcp-svc-btn-connect"
+                      @click="$store.mcpServices.connect(svc.id)">
+                      Connect
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <style>
+    .mcp-svc-panel {
+      padding: 0.5rem 0;
+    }
+    .mcp-svc-header h3 {
+      margin: 0 0 0.25rem 0;
+      font-size: 0.95rem;
+    }
+    .mcp-svc-desc {
+      font-size: 0.8rem;
+      opacity: 0.6;
+      margin: 0 0 1rem 0;
+    }
+    .mcp-svc-error {
+      background: rgba(220, 53, 69, 0.15);
+      color: #ff6b6b;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .mcp-svc-error button {
+      background: none; border: none; color: inherit;
+      cursor: pointer; font-size: 0.75rem; text-decoration: underline;
+    }
+    .mcp-svc-loading, .mcp-svc-empty {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0.5;
+      font-size: 0.85rem;
+    }
+    .mcp-svc-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .mcp-svc-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      transition: border-color 0.15s;
+    }
+    .mcp-svc-card:hover {
+      border-color: var(--color-primary);
+    }
+    .mcp-svc-card-info {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .mcp-svc-card-icon {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      flex-shrink: 0;
+    }
+    .mcp-svc-card-icon img {
+      border-radius: 4px;
+    }
+    .mcp-svc-card-text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+    .mcp-svc-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .mcp-svc-type {
+      font-size: 0.7rem;
+      opacity: 0.5;
+      font-family: monospace;
+    }
+    .mcp-svc-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .mcp-svc-connected {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      color: #4caf50;
+    }
+    .mcp-svc-status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #888;
+    }
+    .mcp-svc-status-dot.connected {
+      background: #4caf50;
+    }
+    .mcp-svc-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .mcp-svc-btn:hover { opacity: 0.85; }
+    .mcp-svc-btn-connect {
+      background: var(--color-primary);
+      color: #fff;
+    }
+    .mcp-svc-btn-disconnect {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      margin-left: 0.3rem;
+    }
+  </style>
+</body>
+</html>

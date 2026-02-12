@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 import secrets
@@ -339,6 +340,85 @@ async def auth_callback():
             brand_name=branding.BRAND_NAME,
             oidc_enabled=True,
         )
+
+
+@webapp.route("/mcp/oauth/callback")
+async def mcp_oauth_callback():
+    """Handle third-party MCP OAuth redirect callback.
+
+    Receives the authorization code from an MCP service's OAuth provider,
+    stores the token via VaultTokenStorage, and closes the popup window.
+    """
+    from python.helpers.print_style import PrintStyle
+
+    code = request.args.get("code")
+    state = request.args.get("state")
+    error = request.args.get("error")
+
+    if error:
+        PrintStyle.error(f"MCP OAuth callback error: {error}")
+        return _mcp_oauth_popup_response(
+            success=False,
+            message=f"OAuth authorization failed: {error}",
+        )
+
+    if not code or not state:
+        return _mcp_oauth_popup_response(
+            success=False,
+            message="Missing authorization code or state parameter.",
+        )
+
+    try:
+        import json as _json
+
+        # Decode state to find user_id and service_id
+        state_data = _json.loads(base64.b64decode(state).decode())
+        user_id = state_data.get("user_id")
+        service_id = state_data.get("service_id")
+
+        if not user_id or not service_id:
+            return _mcp_oauth_popup_response(
+                success=False,
+                message="Invalid state parameter.",
+            )
+
+        # Store the authorization code for the connection manager to exchange
+        from python.helpers import auth_db, user_store
+
+        with auth_db.get_session() as db:
+            user_store.upsert_connection(
+                db,
+                user_id,
+                service_id,
+                scopes_granted=state_data.get("scopes", ""),
+            )
+
+        return _mcp_oauth_popup_response(
+            success=True, message="Connected successfully!"
+        )
+    except Exception as e:
+        PrintStyle.error(f"MCP OAuth callback processing failed: {e}")
+        return _mcp_oauth_popup_response(
+            success=False,
+            message="Failed to process OAuth callback.",
+        )
+
+
+def _mcp_oauth_popup_response(*, success: bool, message: str) -> str:
+    """Return HTML that shows a message and closes the popup window."""
+    color = "#4caf50" if success else "#ff5252"
+    return f"""<!DOCTYPE html>
+<html><head><title>MCP OAuth</title></head>
+<body style="font-family:sans-serif; text-align:center; padding:2rem; background:#1a1a1a; color:#eee">
+<h2 style="color:{color}">{"Connected!" if success else "Error"}</h2>
+<p>{message}</p>
+<script>
+  if (window.opener) {{
+    window.opener.postMessage({{ type: 'mcp_oauth_complete', success: {str(success).lower()} }}, '*');
+    setTimeout(() => window.close(), 1500);
+  }}
+</script>
+</body></html>"""
 
 
 @webapp.route("/logout")

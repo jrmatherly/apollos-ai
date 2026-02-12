@@ -2,21 +2,38 @@
 <head>
   <script type="module">
     import { store } from "/components/sidebar/bottom/sidebar-bottom-store.js";
+    import { store as adminStore } from "/components/admin/admin-store.js";
   </script>
 </head>
 <body>
   <div x-data>
     <template x-if="$store.sidebarBottom">
       <div class="sidebar-bottom-wrapper">
+        <!-- Admin Panel Button (visible to admins) -->
+        <template x-if="window.userInfo && (window.userInfo.is_system_admin || window.userInfo.role === 'org_admin')">
+          <div class="admin-btn-wrapper">
+            <button class="sidebar-admin-btn" @click="$store.admin.open()" title="Administration">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+              Admin
+            </button>
+          </div>
+        </template>
+
         <!-- Preferences Panel -->
         <x-component path="sidebar/bottom/preferences/preferences-panel.html"></x-component>
-        
+
         <!-- Version Info -->
         <div class="version-info">
           <span id="a0version" x-text="$store.sidebarBottom.versionLabel"></span>
         </div>
       </div>
     </template>
+
+    <!-- Admin Panel Overlay (rendered outside sidebar for proper z-index) -->
+    <x-component path="admin/admin-panel.html"></x-component>
   </div>
 
 
@@ -42,6 +59,31 @@
       opacity: 0.7;
       font-size: 0.7rem;
       user-select: all;
+    }
+
+    /* Admin button */
+    .admin-btn-wrapper {
+      padding: 0 var(--spacing-md);
+      margin-bottom: 0.25rem;
+    }
+    .sidebar-admin-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      width: 100%;
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      color: var(--color-text);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.5rem;
+      opacity: 0.6;
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+    .sidebar-admin-btn:hover {
+      opacity: 0.9;
+      border-color: var(--color-primary);
     }
   </style>
 </body>
