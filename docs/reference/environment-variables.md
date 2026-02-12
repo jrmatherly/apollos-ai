@@ -13,8 +13,8 @@ Variables in `usr/.env` override system environment. The file is gitignored and 
 
 | Variable | Description | Values | Default | Required |
 |----------|-------------|--------|---------|----------|
-| `AUTH_LOGIN` | Web UI login username | Any string | *(empty)* | No |
-| `AUTH_PASSWORD` | Web UI login password | Any string | *(empty)* | No |
+| `AUTH_LOGIN` | Legacy single-user login username. For multi-user accounts, use `ADMIN_EMAIL`/`ADMIN_PASSWORD` instead. Kept as a backward-compatible fallback. | Any string | *(empty)* | No |
+| `AUTH_PASSWORD` | Legacy single-user login password. Paired with `AUTH_LOGIN`. | Any string | *(empty)* | No |
 | `ROOT_PASSWORD` | Root password for code execution container. Auto-generated (32-char alphanumeric) inside Docker if unset. | Any string | *(auto-generated in Docker)* | No |
 | `RFC_PASSWORD` | Remote Function Call password for SSH/HTTP to execution sandbox | Any string | *(empty)* | No |
 | `FLASK_SECRET_KEY` | Flask session signing key; auto-generated if unset | Hex string (64 chars) | Random `secrets.token_hex(32)` | No |
