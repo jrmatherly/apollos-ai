@@ -7,6 +7,7 @@ from flask import (  # noqa: F401 — send_file, session re-exported for API han
     Flask,
     Request,
     Response,
+    g,
     send_file,
     session,
 )
@@ -54,6 +55,9 @@ class ApiHandler:
 
     async def handle_request(self, request: Request) -> Response:
         try:
+            # Populate g.current_user from session for downstream handlers
+            g.current_user = session.get("user")
+
             # input data from request based on type
             input_data: Input = {}
             if request.is_json:

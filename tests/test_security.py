@@ -383,13 +383,13 @@ class TestSecurityHeaders:
         assert "strict-origin-when-cross-origin" in source  # Referrer-Policy value
         assert "frame-ancestors 'none'" in source  # CSP directive
 
-    def test_session_cookie_samesite_strict(self):
-        """Session cookie must use SameSite=Strict."""
+    def test_session_cookie_samesite(self):
+        """Session cookie must use SameSite=Lax (required for OIDC redirects)."""
         import run_ui
 
         source = inspect.getsource(run_ui)
         assert "SESSION_COOKIE_SAMESITE" in source
-        assert '"Strict"' in source or "'Strict'" in source
+        assert '"Lax"' in source or "'Lax'" in source
 
     def test_csrf_protection_exists(self):
         """run_ui must define CSRF token protection."""

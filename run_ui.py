@@ -44,6 +44,7 @@ from python.helpers import (
     process,
     runtime,
 )
+from python.helpers.auth import get_auth_manager, init_auth
 from python.helpers import settings as settings_helper
 from python.helpers.api import ApiHandler
 from python.helpers.extract_tools import load_classes_from_folder
@@ -78,9 +79,10 @@ webapp.config.update(
     JSON_SORT_KEYS=False,
     SESSION_COOKIE_NAME="session_"
     + runtime.get_runtime_id(),  # bind the session cookie name to runtime id to prevent session collision on same host
-    SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SAMESITE="Lax",  # Lax required for OIDC redirect-back
+    SESSION_COOKIE_HTTPONLY=True,
     SESSION_PERMANENT=True,
-    PERMANENT_SESSION_LIFETIME=timedelta(days=1),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
     MAX_CONTENT_LENGTH=int(
         os.getenv("FLASK_MAX_CONTENT_LENGTH", str(UPLOAD_LIMIT_BYTES))
     ),
@@ -231,15 +233,20 @@ def requires_loopback(f):
 def requires_auth(f):
     @wraps(f)
     async def decorated(*args, **kwargs):
-        user_pass_hash = login.get_credentials_hash()
-        # If no auth is configured, just proceed
-        if not user_pass_hash:
+        # New multi-user auth: check session["authentication"] (set by AuthManager)
+        if session.get("authentication"):
+            from flask import g
+
+            g.current_user = session.get("user")
             return await f(*args, **kwargs)
 
-        if session.get("authentication") != user_pass_hash:
-            return redirect(url_for("login_handler"))
+        # Legacy fallback: AUTH_LOGIN/AUTH_PASSWORD env vars (pre-Phase 1)
+        user_pass_hash = login.get_credentials_hash()
+        if not user_pass_hash:
+            # No auth configured at all — proceed without auth
+            return await f(*args, **kwargs)
 
-        return await f(*args, **kwargs)
+        return redirect(url_for("login_handler"))
 
     return decorated
 
@@ -262,25 +269,84 @@ def csrf_protect(f):
 async def login_handler():
     error = None
     if request.method == "POST":
-        user = dotenv.get_dotenv_value("AUTH_LOGIN")
-        password = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
 
-        if request.form["username"] == user and request.form["password"] == password:
+        # Try new multi-user auth (local accounts in auth.db)
+        try:
+            auth_mgr = get_auth_manager()
+            userinfo = auth_mgr.login_local(username, password)
+            if userinfo:
+                auth_mgr.establish_session(userinfo)
+                return redirect(url_for("serve_index"))
+        except RuntimeError:
+            pass  # AuthManager not initialized — fall through to legacy
+
+        # Legacy fallback: AUTH_LOGIN/AUTH_PASSWORD env vars
+        legacy_user = dotenv.get_dotenv_value("AUTH_LOGIN")
+        legacy_pass = dotenv.get_dotenv_value("AUTH_PASSWORD")
+        if legacy_user and username == legacy_user and password == legacy_pass:
             session["authentication"] = login.get_credentials_hash()
             return redirect(url_for("serve_index"))
-        else:
-            await asyncio.sleep(1)
-            error = "Invalid Credentials. Please try again."
+
+        await asyncio.sleep(1)
+        error = "Invalid credentials. Please try again."
+
+    # Determine if OIDC SSO button should be shown
+    oidc_enabled = False
+    try:
+        oidc_enabled = get_auth_manager().is_oidc_configured
+    except RuntimeError:
+        pass
 
     login_page_content = files.read_file("webui/login.html")
     return render_template_string(
-        login_page_content, error=error, brand_name=branding.BRAND_NAME
+        login_page_content,
+        error=error,
+        brand_name=branding.BRAND_NAME,
+        oidc_enabled=oidc_enabled,
     )
+
+
+@webapp.route("/login/entra")
+async def login_entra():
+    """Redirect to EntraID OIDC authorization endpoint."""
+    try:
+        auth_mgr = get_auth_manager()
+        if not auth_mgr.is_oidc_configured:
+            return redirect(url_for("login_handler"))
+        login_url = auth_mgr.get_login_url()
+        return redirect(login_url)
+    except Exception as e:
+        PrintStyle.error(f"OIDC login initiation failed: {e}")
+        return redirect(url_for("login_handler"))
+
+
+@webapp.route("/auth/callback")
+async def auth_callback():
+    """Handle the OIDC callback — exchange code for tokens."""
+    try:
+        auth_mgr = get_auth_manager()
+        userinfo = auth_mgr.process_callback(dict(request.args))
+        auth_mgr.establish_session(userinfo)
+        return redirect(url_for("serve_index"))
+    except Exception as e:
+        PrintStyle.error(f"OIDC callback failed: {e}")
+        login_page_content = files.read_file("webui/login.html")
+        return render_template_string(
+            login_page_content,
+            error="SSO authentication failed. Please try again or use local login.",
+            brand_name=branding.BRAND_NAME,
+            oidc_enabled=True,
+        )
 
 
 @webapp.route("/logout")
 async def logout_handler():
-    session.pop("authentication", None)
+    try:
+        get_auth_manager().clear_session()
+    except RuntimeError:
+        session.pop("authentication", None)
     return redirect(url_for("login_handler"))
 
 
@@ -303,7 +369,11 @@ async def serve_index():
         version_time=gitinfo["commit_time"],
         runtime_id=runtime.get_runtime_id(),
         runtime_is_development=("true" if runtime.is_development() else "false"),
-        logged_in=("true" if login.get_credentials_hash() else "false"),
+        logged_in=(
+            "true"
+            if session.get("authentication") or login.get_credentials_hash()
+            else "false"
+        ),
     )
     return index
 
@@ -439,17 +509,22 @@ def configure_websocket_namespaces(
                     return False
 
                 if _auth_required:
-                    credentials_hash = login.get_credentials_hash()
-                    if credentials_hash:
-                        if session.get("authentication") != credentials_hash:
-                            PrintStyle.warning(
-                                f"WebSocket authentication failed for {_namespace} {sid}: session not valid"
-                            )
-                            return False
+                    # New multi-user auth: session["authentication"] is True
+                    if session.get("authentication") is True:
+                        pass  # Authenticated via AuthManager
                     else:
-                        PrintStyle.debug(
-                            "WebSocket authentication required but credentials not configured; proceeding"
-                        )
+                        # Legacy: AUTH_LOGIN/AUTH_PASSWORD env var auth
+                        credentials_hash = login.get_credentials_hash()
+                        if credentials_hash:
+                            if session.get("authentication") != credentials_hash:
+                                PrintStyle.warning(
+                                    f"WebSocket authentication failed for {_namespace} {sid}: session not valid"
+                                )
+                                return False
+                        else:
+                            PrintStyle.debug(
+                                "WebSocket authentication required but credentials not configured; proceeding"
+                            )
 
                 if _csrf_required:
                     expected_token = session.get("csrf_token")
@@ -481,7 +556,8 @@ def configure_websocket_namespaces(
                         )
                         return False
 
-                user_id = session.get("user_id") or "single_user"
+                user_data = session.get("user")
+                user_id = user_data["id"] if user_data else "single_user"
                 await websocket_manager.handle_connect(_namespace, sid, user_id=user_id)
                 return True
 
@@ -576,6 +652,15 @@ def run():
         websocket_manager=websocket_manager,
         handlers_by_namespace=handlers_by_namespace,
     )
+
+    # Initialize multi-user auth system (Phase 1)
+    try:
+        from python.helpers.auth_bootstrap import bootstrap as auth_bootstrap
+
+        auth_bootstrap()
+        init_auth(webapp)
+    except Exception as e:
+        PrintStyle.warning(f"Auth system initialization skipped: {e}")
 
     init_a0()
 
