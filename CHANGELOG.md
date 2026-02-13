@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.3.2] - 2026-02-13
+
+
+### Bug Fixes
+
+- *(deploy)* Add APP_BASE_URL, enhance setup.sh proxy config, fix docs
+
+
+### CI/CD
+
+- Add concurrency configuration to `docker-base` and `release` workflows.
+
+
+### Features
+
+- Add new agent skills including Remotion, React components, shadcn/ui, and prompt enhancement capabilities.
+- Enhance Caddyfile TLS configuration with an HTTP-only option, automate setup script configuration, and standardize database boolean defaults.
+- Implement pgVector for durable vector storage with a hybrid FAISS cache, including database migrations and connection pooling.
+
+
+### Refactor
+
+- Standardize error responses to always return a safe message and remove runtime dependency.
+- Centralize authentication requirement checks and add security headers.
+
+
+### Testing
+
+- Explicitly set `is_login_required` to true in auth phase 1 test.
+
+
 ## [v0.3.0] - 2026-02-13
 
 
