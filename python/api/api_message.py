@@ -13,9 +13,8 @@ from python.helpers.projects import activate_project
 from python.helpers.security import safe_filename
 
 # Reuse the upload allowlist for attachment validation
+import python.api.upload as _upload_module
 from pathlib import Path
-
-from python.api.upload import UploadFile
 
 
 class ApiMessage(ApiHandler):
@@ -78,7 +77,7 @@ class ApiMessage(ApiHandler):
 
                     # Validate file extension against allowlist
                     ext = Path(filename).suffix.lower()
-                    if ext not in UploadFile.ALLOWED_EXTENSIONS:
+                    if ext not in _upload_module.UploadFile.ALLOWED_EXTENSIONS:
                         PrintStyle.error(
                             f"Rejected attachment with disallowed extension: {filename}"
                         )
