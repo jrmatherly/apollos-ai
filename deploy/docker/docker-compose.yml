@@ -32,7 +32,6 @@ services:
     ports:
       - "${HOST_PORT:-50080}:80"
     volumes:
-      - ./.env:/a0/.env:ro
       - apollos-data:/a0/usr
       # Custom CA certificates — place your CA/intermediate PEM files in certs/ca/
       # to trust internal CAs (e.g., for LiteLLM proxy with enterprise certificates).

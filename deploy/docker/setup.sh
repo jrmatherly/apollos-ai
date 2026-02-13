@@ -150,6 +150,41 @@ if [[ " ${PROFILES[*]} " =~ " proxy " ]]; then
             rm -f .env.bak
             ok "Set CORS_ALLOWED_ORIGINS=https://${DOMAIN_VAL}"
         fi
+
+        # ALLOWED_ORIGINS (CSRF)
+        if grep -q '^# ALLOWED_ORIGINS=' .env 2>/dev/null; then
+            sed -i.bak "s|^# ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=https://${DOMAIN_VAL}|" .env
+            rm -f .env.bak
+            ok "Set ALLOWED_ORIGINS=https://${DOMAIN_VAL}"
+        fi
+
+        # SESSION_COOKIE_SECURE
+        if grep -q '^# SESSION_COOKIE_SECURE=' .env 2>/dev/null; then
+            sed -i.bak "s|^# SESSION_COOKIE_SECURE=.*|SESSION_COOKIE_SECURE=true|" .env
+            rm -f .env.bak
+            ok "Set SESSION_COOKIE_SECURE=true"
+        fi
+
+        # MCP_SERVER_BASE_URL
+        if grep -q '^# MCP_SERVER_BASE_URL=' .env 2>/dev/null; then
+            sed -i.bak "s|^# MCP_SERVER_BASE_URL=.*|MCP_SERVER_BASE_URL=https://${DOMAIN_VAL}|" .env
+            rm -f .env.bak
+            ok "Set MCP_SERVER_BASE_URL=https://${DOMAIN_VAL}"
+        fi
+
+        # APP_BASE_URL
+        if grep -q '^# APP_BASE_URL=' .env 2>/dev/null; then
+            sed -i.bak "s|^# APP_BASE_URL=.*|APP_BASE_URL=https://${DOMAIN_VAL}|" .env
+            rm -f .env.bak
+            ok "Set APP_BASE_URL=https://${DOMAIN_VAL}"
+        fi
+
+        # OIDC_REDIRECT_URI
+        if grep -q '^# OIDC_REDIRECT_URI=' .env 2>/dev/null; then
+            sed -i.bak "s|^# OIDC_REDIRECT_URI=.*|OIDC_REDIRECT_URI=https://${DOMAIN_VAL}/auth/callback|" .env
+            rm -f .env.bak
+            ok "Set OIDC_REDIRECT_URI=https://${DOMAIN_VAL}/auth/callback"
+        fi
     fi
 fi
 

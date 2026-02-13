@@ -202,6 +202,7 @@ Optional Entra ID OAuth for inbound MCP connections (IDE clients like VS Code, C
 | `MCP_AZURE_IDENTIFIER_URI` | Application ID URI for scope prefixing | URI | `api://{MCP_AZURE_CLIENT_ID}` | No |
 | `MCP_AZURE_REDIRECT_URIS` | Comma-separated allowed client redirect URIs | URL list | *(none — all allowed)* | No |
 | `MCP_AZURE_JWT_SIGNING_KEY` | Persistent key for signing OAuth proxy tokens (survives server restarts) | String | *(none — random per restart)* | Production |
+| `APP_BASE_URL` | Public URL of the application (for MCP client OAuth callbacks to external services) | URL | `http://localhost:50080` | Production |
 
 **Setup steps:**
 
@@ -226,8 +227,9 @@ python3 -c "import secrets; print(secrets.token_urlsafe(48))"
 | `WEB_UI_HOST` | Host/IP address for the web UI server | IP or hostname | `localhost` | No |
 | `WEB_UI_PORT` | Port for the web UI server | Integer | `5000` | No |
 | `TUNNEL_API_PORT` | Port for the tunnel proxy API | Integer | `0` (disabled) | No |
-| `FLASK_MAX_CONTENT_LENGTH` | Max upload size in bytes | Integer | `157286400` (150 MB) | No |
-| `FLASK_MAX_FORM_MEMORY_SIZE` | Max form field size in bytes | Integer | `157286400` (150 MB) | No |
+| `FLASK_MAX_CONTENT_LENGTH` | Max upload size in bytes | Integer | `5368709120` (5 GB) | No |
+| `FLASK_MAX_FORM_MEMORY_SIZE` | Max form field size in bytes | Integer | `5368709120` (5 GB) | No |
+| `SSL_VERIFY` | Disable SSL certificate verification for LLM API calls (consumed by LiteLLM, not application code) | `true`/`false` | `true` | No |
 
 ## API Keys (Provider Authentication)
 
