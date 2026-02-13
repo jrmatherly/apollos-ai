@@ -11,23 +11,6 @@ from python.helpers.print_style import PrintStyle
 from python.helpers.security import safe_filename
 
 
-def _confine_to_project_root(untrusted_path: str) -> str:
-    """Validate that a path falls within the project root.
-
-    Uses os.path.realpath (CodeQL-recognized normalization) + startswith
-    (CodeQL-recognized safe access check) to create a sanitizer barrier
-    for CWE-22 / py/path-injection.
-
-    Returns the resolved absolute path string on success.
-    Raises ValueError if the path escapes the project root.
-    """
-    normalized = os.path.realpath(untrusted_path)
-    root = os.path.realpath(files.get_base_dir())
-    if not normalized.startswith(root + os.sep) and normalized != root:
-        raise ValueError("base_dir escapes project root")
-    return normalized
-
-
 class FileBrowser:
     ALLOWED_EXTENSIONS = {
         "image": {"jpg", "jpeg", "png", "bmp"},
@@ -39,8 +22,14 @@ class FileBrowser:
     MAX_TEXT_FILE_SIZE = 1 * 1024 * 1024  # 1MB
 
     def __init__(self, base_dir: str):
-        resolved_str = _confine_to_project_root(base_dir)
-        self.base_dir = Path(resolved_str)
+        # Inline realpath + startswith guard so CodeQL sees a recognized
+        # sanitizer pattern (CWE-22 / py/path-injection) in the same scope
+        # as the os.makedirs sink.
+        normalized = os.path.realpath(base_dir)
+        root = os.path.realpath(files.get_base_dir())
+        if not normalized.startswith(root + os.sep) and normalized != root:
+            raise ValueError("base_dir escapes project root")
+        self.base_dir = Path(normalized)
         os.makedirs(self.base_dir, exist_ok=True)
 
     def _is_confined(self, resolved_path: Path) -> bool:
