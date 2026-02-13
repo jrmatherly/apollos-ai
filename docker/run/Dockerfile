@@ -8,23 +8,24 @@ ARG BRANCH
 RUN if [ -z "$BRANCH" ]; then echo "ERROR: BRANCH is not set!" >&2; exit 1; fi
 ENV BRANCH=$BRANCH
 
-# Copy filesystem files to root
+# Copy filesystem files to root (installation scripts)
 COPY ./fs/ /
 
-# pre installation steps
+# pre installation steps (apt-get update, SSH setup)
 RUN bash /ins/pre_install.sh $BRANCH
 
-# install A0
-RUN bash /ins/install_A0.sh $BRANCH
-
-# install additional software
-RUN bash /ins/install_additional.sh $BRANCH
-
-# cleanup repo and install A0 without caching, this speeds up builds
+# Clone repository and install Python packages + Playwright + preload.
+# Done in a single layer so the pip/uv cache can be purged without bloating
+# intermediate layers.  CACHE_DATE busts this layer on every release so the
+# build always picks up the latest commit from the branch.
 ARG CACHE_DATE=none
-RUN echo "cache buster $CACHE_DATE" && bash /ins/install_A02.sh $BRANCH
+RUN echo "cache buster $CACHE_DATE" && \
+    bash /ins/install_A0.sh $BRANCH && \
+    . /ins/setup_venv.sh && \
+    pip cache purge && \
+    uv cache prune
 
-# post installation steps
+# post installation steps (apt cleanup)
 RUN bash /ins/post_install.sh $BRANCH
 
 # Expose ports
@@ -33,4 +34,4 @@ EXPOSE 22 80 9000-9009
 RUN chmod +x /exe/initialize.sh /exe/run_A0.sh /exe/run_searxng.sh /exe/run_tunnel_api.sh
 
 # initialize runtime and switch to supervisord
-CMD ["/exe/initialize.sh", "$BRANCH"]
+CMD ["sh", "-c", "exec /exe/initialize.sh $BRANCH"]

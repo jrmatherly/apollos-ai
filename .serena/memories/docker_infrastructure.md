@@ -33,6 +33,30 @@ docker:run                  Run local container (port 50080→80)
 - App: `ghcr.io/jrmatherly/apollos-ai` (tags: latest, v*.*.*, development, testing)
 - Base: `ghcr.io/jrmatherly/apollos-ai-base` (tag: latest)
 
+## Key Build Details
+
+### Shell Compatibility
+- Base image: `/bin/sh → dash` (NOT bash)
+- All scripts sourced from Dockerfile `RUN` instructions run under `/bin/sh -c`
+- Scripts must use POSIX `.` (dot) instead of `source` (bash-ism) when sourced from Dockerfiles
+- Scripts invoked with `bash /path/to/script.sh` can use bash features
+- `setup_venv.sh` is sourced (not executed) — must remain POSIX-compatible
+
+### Layer Caching (DockerfileLocal)
+- `requirements.txt` + `overrides.txt` copied first as a separate layer
+- Python packages install in a cached layer — only rebuilds when deps change
+- Source code copied after deps → source changes don't re-download packages
+- Build with cached layers: ~1-2s; full rebuild: ~200s
+
+### CMD Pattern
+- Both Dockerfiles use: `CMD ["sh", "-c", "exec /exe/initialize.sh $BRANCH"]`
+- JSON exec form for proper BuildKit compliance
+- `sh -c` enables `$BRANCH` environment variable expansion
+- `exec` ensures proper PID 1 signal handling → supervisord receives SIGTERM directly
+
+### Dead Scripts Removed
+- `install_additional.sh` — was entirely commented out, no longer referenced
+
 ## Build References
 - `docker/base/build.txt` — Manual build commands for base image (local + GHCR + multi-arch)
 - `docker/run/build.txt` — Manual build commands for app image (local + GHCR + multi-arch)

@@ -6,23 +6,30 @@ FROM ghcr.io/jrmatherly/apollos-ai-base:latest
 ARG BRANCH=local
 ENV BRANCH=$BRANCH
 
-# Copy filesystem files to root
+# Copy filesystem files to root (installation scripts)
 COPY ./docker/run/fs/ /
-# Copy current development files to git, they will only be used in "local" branch
-COPY ./ /git/apollos-ai
+
+# --- Layer-cached dependency install ---
+# Copy only dependency-related files first. This layer is cached as long
+# as requirements.txt and overrides.txt don't change, avoiding a full
+# re-download of Python packages on every source code edit.
+COPY requirements.txt overrides.txt /git/apollos-ai/
 
 # pre installation steps
 RUN bash /ins/pre_install.sh $BRANCH
 
-# install A0
-RUN bash /ins/install_A0.sh $BRANCH
+# Install Python packages (cached unless requirements change)
+RUN . /ins/setup_venv.sh && \
+    uv pip install -r /git/apollos-ai/requirements.txt \
+    --overrides /git/apollos-ai/overrides.txt && \
+    bash /ins/install_playwright.sh $BRANCH
 
-# install additional software
-RUN bash /ins/install_additional.sh $BRANCH
+# --- Source code (changes here don't re-download packages) ---
+COPY ./ /git/apollos-ai
 
-# cleanup repo and install A0 without caching, this speeds up builds
-ARG CACHE_DATE=none
-RUN echo "cache buster $CACHE_DATE" && bash /ins/install_A02.sh $BRANCH
+# Preload models
+RUN . /ins/setup_venv.sh && \
+    python /git/apollos-ai/preload.py --dockerized=true
 
 # post installation steps
 RUN bash /ins/post_install.sh $BRANCH
@@ -33,4 +40,4 @@ EXPOSE 22 80 9000-9009
 RUN chmod +x /exe/initialize.sh /exe/run_A0.sh /exe/run_searxng.sh /exe/run_tunnel_api.sh
 
 # initialize runtime and switch to supervisord
-CMD ["/exe/initialize.sh", "$BRANCH"]
+CMD ["sh", "-c", "exec /exe/initialize.sh $BRANCH"]

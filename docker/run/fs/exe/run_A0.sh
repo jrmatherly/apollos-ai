@@ -1,7 +1,7 @@
 #!/bin/bash
 
-. "/ins/setup_venv.sh" "$@"
-. "/ins/copy_A0.sh" "$@"
+. "/ins/setup_venv.sh"
+. "/ins/copy_A0.sh"
 
 python /a0/prepare.py --dockerized=true
 # python /a0/preload.py --dockerized=true # no need to run preload if it's done during container build

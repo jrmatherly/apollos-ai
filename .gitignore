@@ -63,6 +63,9 @@ agent_history.gif
 # Local Docs
 .local_docs/
 .scratchpad/
+.full-review/
+SECURITY_AUDIT.md
+docs/analysis/
 
 # Apollos AI Data
 my-data/

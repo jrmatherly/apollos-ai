@@ -1,12 +1,13 @@
 
 # LOCAL BUILDS
+# Prefer mise tasks: mise run docker:build:local
 # Run these commands from the project root folder
 
-# local development image based on local files with smart cache
-docker build -f DockerfileLocal -t apollos-ai-local --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
+# local development image based on local files (layer-cached deps)
+docker build -f DockerfileLocal -t apollos-ai-local --platform linux/amd64 .
 
 # local development image based on local files without cache
-docker build -f DockerfileLocal -t apollos-ai-local --no-cache .
+docker build -f DockerfileLocal -t apollos-ai-local --platform linux/amd64 --no-cache .
 
 
 # GIT BASED BUILDS

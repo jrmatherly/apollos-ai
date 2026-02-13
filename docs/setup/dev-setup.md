@@ -195,11 +195,11 @@ Build a local image from your working tree:
 
 ```bash
 mise run docker:build:local
-# Or directly:
-docker build -f DockerfileLocal -t apollos-ai-local --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
 ```
 
-The `CACHE_DATE` argument is optional — it caches most of the build and only rebuilds the last steps when files change.
+The local Dockerfile uses layer caching: `requirements.txt` and `overrides.txt` are copied in a
+separate layer before the source code. Python packages are only re-downloaded when dependencies
+change — source code edits rebuild in seconds.
 
 ### Pushing to GHCR (GitHub Container Registry)
 

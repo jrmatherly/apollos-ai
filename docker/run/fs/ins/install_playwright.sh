@@ -2,7 +2,7 @@
 set -e
 
 # activate venv
-. "/ins/setup_venv.sh" "$@"
+. "/ins/setup_venv.sh"
 
 # install playwright if not installed (should be from requirements.txt)
 uv pip install playwright

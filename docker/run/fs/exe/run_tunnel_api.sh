@@ -9,7 +9,7 @@ while [ ! -f /a0/run_tunnel.py ]; do
     sleep 1
 done
 
-. "/ins/setup_venv.sh" "$@"
+. "/ins/setup_venv.sh"
 
 exec python /a0/run_tunnel.py \
     --dockerized=true \

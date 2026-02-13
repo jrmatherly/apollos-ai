@@ -175,10 +175,8 @@ sources = ["docker/run/**"]
 description = "Build local Docker image from working tree (amd64)"
 run = '''
 docker build -f DockerfileLocal -t apollos-ai-local \
-  --platform linux/amd64 \
-  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
+  --platform linux/amd64 .
 '''
-sources = ["DockerfileLocal", "requirements.txt", "docker/**", "alembic/**", "python/**", "webui/**", "prompts/**", "run_ui.py", "pyproject.toml"]
 
 [tasks."docker:build"]
 description = "Build base + local Docker images in order"

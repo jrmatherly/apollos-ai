@@ -26,7 +26,7 @@ else
     }
 fi
 
-. "/ins/setup_venv.sh" "$@"
+. "/ins/setup_venv.sh"
 
 # moved to base image
 # # Ensure the virtual environment and pip setup
