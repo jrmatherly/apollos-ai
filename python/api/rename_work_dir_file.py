@@ -2,6 +2,7 @@ from python.api import get_work_dir_files
 from python.helpers import runtime
 from python.helpers.api import ApiHandler, Input, Output, Request
 from python.helpers.file_browser import FileBrowser
+from python.helpers.workspace import get_workspace_root
 
 
 class RenameWorkDirFile(ApiHandler):
@@ -11,6 +12,9 @@ class RenameWorkDirFile(ApiHandler):
 
     async def process(self, input: Input, request: Request) -> Output:
         try:
+            tenant_ctx = self._get_tenant_ctx()
+            workspace = get_workspace_root(tenant_ctx)
+
             action = input.get("action", "rename")
             new_name = (input.get("newName", "") or "").strip()
             if not new_name:
@@ -23,7 +27,7 @@ class RenameWorkDirFile(ApiHandler):
                 if not parent_path:
                     return {"error": "Parent path is required"}
                 res = await runtime.call_development_function(
-                    create_folder, parent_path, new_name
+                    create_folder, parent_path, new_name, workspace
                 )
             else:
                 file_path = input.get("path", "")
@@ -32,12 +36,12 @@ class RenameWorkDirFile(ApiHandler):
                 if not file_path.startswith("/"):
                     file_path = f"/{file_path}"
                 res = await runtime.call_development_function(
-                    rename_item, file_path, new_name
+                    rename_item, file_path, new_name, workspace
                 )
 
             if res:
                 result = await runtime.call_development_function(
-                    get_work_dir_files.get_files, current_path
+                    get_work_dir_files.get_files, current_path, workspace
                 )
                 return {"data": result}
 
@@ -52,11 +56,11 @@ class RenameWorkDirFile(ApiHandler):
             return {"error": str(e)}
 
 
-async def rename_item(file_path: str, new_name: str) -> bool:
-    browser = FileBrowser()
+async def rename_item(file_path: str, new_name: str, base_dir: str) -> bool:
+    browser = FileBrowser(base_dir=base_dir)
     return browser.rename_item(file_path, new_name)
 
 
-async def create_folder(parent_path: str, folder_name: str) -> bool:
-    browser = FileBrowser()
+async def create_folder(parent_path: str, folder_name: str, base_dir: str) -> bool:
+    browser = FileBrowser(base_dir=base_dir)
     return browser.create_folder(parent_path, folder_name)

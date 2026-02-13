@@ -4,6 +4,7 @@ import os
 from python.helpers import files, runtime
 from python.helpers.api import ApiHandler, Input, Output, Request
 from python.helpers.file_browser import FileBrowser
+from python.helpers.workspace import get_workspace_root
 
 MAX_EDIT_FILE_SIZE = 1024 * 1024
 BINARY_SAMPLE_SIZE = 10 * 1024
@@ -27,6 +28,9 @@ class EditWorkDirFile(ApiHandler):
 
     async def process(self, input: Input, request: Request) -> Output:
         try:
+            tenant_ctx = self._get_tenant_ctx()
+            workspace = get_workspace_root(tenant_ctx)
+
             if request.method == "GET":
                 file_path = request.args.get("path", "")
                 if not file_path:
@@ -34,7 +38,9 @@ class EditWorkDirFile(ApiHandler):
                 if not file_path.startswith("/"):
                     file_path = f"/{file_path}"
 
-                data = await runtime.call_development_function(load_file, file_path)
+                data = await runtime.call_development_function(
+                    load_file, file_path, workspace
+                )
                 return {"data": data}
 
             file_path = input.get("path", "")
@@ -51,7 +57,9 @@ class EditWorkDirFile(ApiHandler):
             if content_size > MAX_EDIT_FILE_SIZE:
                 return {"error": "File exceeds 1 MB and cannot be edited"}
 
-            res = await runtime.call_development_function(save_file, file_path, content)
+            res = await runtime.call_development_function(
+                save_file, file_path, content, workspace
+            )
             if not res:
                 return {"error": "Failed to save file"}
 
@@ -62,8 +70,8 @@ class EditWorkDirFile(ApiHandler):
             return {"error": self._extract_error_message(str(e))}
 
 
-async def load_file(file_path: str) -> dict:
-    browser = FileBrowser()
+async def load_file(file_path: str, base_dir: str) -> dict:
+    browser = FileBrowser(base_dir=base_dir)
     full_path = browser.get_full_path(file_path)
 
     if os.path.isdir(full_path):
@@ -92,6 +100,6 @@ async def load_file(file_path: str) -> dict:
     }
 
 
-def save_file(file_path: str, content: str) -> bool:
-    browser = FileBrowser()
+def save_file(file_path: str, content: str, base_dir: str) -> bool:
+    browser = FileBrowser(base_dir=base_dir)
     return browser.save_text_file(file_path, content)

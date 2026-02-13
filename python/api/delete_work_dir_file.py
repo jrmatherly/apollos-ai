@@ -2,6 +2,7 @@ from python.api import get_work_dir_files
 from python.helpers import runtime
 from python.helpers.api import ApiHandler, Input, Output, Request
 from python.helpers.file_browser import FileBrowser
+from python.helpers.workspace import get_workspace_root
 
 
 class DeleteWorkDirFile(ApiHandler):
@@ -11,20 +12,22 @@ class DeleteWorkDirFile(ApiHandler):
 
     async def process(self, input: Input, request: Request) -> Output:
         try:
+            tenant_ctx = self._get_tenant_ctx()
+            workspace = get_workspace_root(tenant_ctx)
+
             file_path = input.get("path", "")
             if not file_path.startswith("/"):
                 file_path = f"/{file_path}"
 
             current_path = input.get("currentPath", "")
 
-            # browser = FileBrowser()
-            res = await runtime.call_development_function(delete_file, file_path)
+            res = await runtime.call_development_function(
+                delete_file, file_path, workspace
+            )
 
             if res:
-                # Get updated file list
-                # result = browser.get_files(current_path)
                 result = await runtime.call_development_function(
-                    get_work_dir_files.get_files, current_path
+                    get_work_dir_files.get_files, current_path, workspace
                 )
                 return {"data": result}
             else:
@@ -33,6 +36,6 @@ class DeleteWorkDirFile(ApiHandler):
             return {"error": str(e)}
 
 
-async def delete_file(file_path: str):
-    browser = FileBrowser()
+async def delete_file(file_path: str, base_dir: str):
+    browser = FileBrowser(base_dir=base_dir)
     return browser.delete_file(file_path)
