@@ -1,5 +1,24 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.15/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"includes": [
+			"**",
+			"!webui/vendor",
+			"!!.scratchpad",
+			"!!.local_docs",
+			"!!.drift",
+			"!!.worktrees",
+			"!!.venv",
+			"!!tmp",
+			"!!logs",
+			"!!usr"
+		]
+	},
 	"css": {
 		"linter": {
 			"enabled": true

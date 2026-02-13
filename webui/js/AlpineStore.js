@@ -10,30 +10,32 @@ const stores = new Map();
  * @returns {T}
  */
 export function createStore(name, initialState) {
-  const proxy = new Proxy(initialState, {
-    set(target, prop, value) {
-      const store = globalThis.Alpine?.store(name);
-      if (store) store[prop] = value;
-      else target[prop] = value;
-      return true;
-    },
-    get(target, prop) {
-      const store = globalThis.Alpine?.store(name);
-      if (store) return store[prop];
-      return target[prop];
-    }
-  });
+	const proxy = new Proxy(initialState, {
+		set(target, prop, value) {
+			const store = globalThis.Alpine?.store(name);
+			if (store) store[prop] = value;
+			else target[prop] = value;
+			return true;
+		},
+		get(target, prop) {
+			const store = globalThis.Alpine?.store(name);
+			if (store) return store[prop];
+			return target[prop];
+		},
+	});
 
-  if (globalThis.Alpine) {
-    globalThis.Alpine.store(name, initialState);
-  } else {
-    document.addEventListener("alpine:init", () => Alpine.store(name, initialState));
-  }
+	if (globalThis.Alpine) {
+		globalThis.Alpine.store(name, initialState);
+	} else {
+		document.addEventListener("alpine:init", () =>
+			Alpine.store(name, initialState),
+		);
+	}
 
-  // Store the proxy
-  stores.set(name, proxy);
+	// Store the proxy
+	stores.set(name, proxy);
 
-  return /** @type {T} */ (proxy); // explicitly cast for linter support
+	return /** @type {T} */ (proxy); // explicitly cast for linter support
 }
 
 /**
@@ -43,7 +45,7 @@ export function createStore(name, initialState) {
  * @returns {T | undefined}
  */
 export function getStore(name) {
-  return /** @type {T | undefined} */ (stores.get(name));
+	return /** @type {T | undefined} */ (stores.get(name));
 }
 
 /**
@@ -57,34 +59,35 @@ export function getStore(name) {
  * @returns {object}
  */
 export function saveState(store, include = [], exclude = []) {
-  const hasExclude = Array.isArray(exclude) && exclude.length > 0;
-  const hasInclude = !hasExclude && Array.isArray(include) && include.length > 0;
+	const hasExclude = Array.isArray(exclude) && exclude.length > 0;
+	const hasInclude =
+		!hasExclude && Array.isArray(include) && include.length > 0;
 
-  /** @type {Record<string, any>} */
-  const snapshot = {};
+	/** @type {Record<string, any>} */
+	const snapshot = {};
 
-  for (const key of Object.keys(store)) {
-    if (hasExclude) {
-      if (exclude.includes(key)) continue;
-    } else if (hasInclude) {
-      if (!include.includes(key)) continue;
-    }
+	for (const key of Object.keys(store)) {
+		if (hasExclude) {
+			if (exclude.includes(key)) continue;
+		} else if (hasInclude) {
+			if (!include.includes(key)) continue;
+		}
 
-    const value = store[key];
-    if (typeof value === "function") continue;
+		const value = store[key];
+		if (typeof value === "function") continue;
 
-    if (Array.isArray(value)) {
-      snapshot[key] = value.map((item) =>
-        typeof item === "object" && item !== null ? { ...item } : item
-      );
-    } else if (typeof value === "object" && value !== null) {
-      snapshot[key] = { ...value };
-    } else {
-      snapshot[key] = value;
-    }
-  }
+		if (Array.isArray(value)) {
+			snapshot[key] = value.map((item) =>
+				typeof item === "object" && item !== null ? { ...item } : item,
+			);
+		} else if (typeof value === "object" && value !== null) {
+			snapshot[key] = { ...value };
+		} else {
+			snapshot[key] = value;
+		}
+	}
 
-  return snapshot;
+	return snapshot;
 }
 
 /**
@@ -96,28 +99,29 @@ export function saveState(store, include = [], exclude = []) {
  * @param {string[]} [exclude]
  */
 export function loadState(store, state, include = [], exclude = []) {
-  if (!state) return;
+	if (!state) return;
 
-  const hasExclude = Array.isArray(exclude) && exclude.length > 0;
-  const hasInclude = !hasExclude && Array.isArray(include) && include.length > 0;
+	const hasExclude = Array.isArray(exclude) && exclude.length > 0;
+	const hasInclude =
+		!hasExclude && Array.isArray(include) && include.length > 0;
 
-  for (const key of Object.keys(state)) {
-    if (hasExclude) {
-      if (exclude.includes(key)) continue;
-    } else if (hasInclude) {
-      if (!include.includes(key)) continue;
-    }
+	for (const key of Object.keys(state)) {
+		if (hasExclude) {
+			if (exclude.includes(key)) continue;
+		} else if (hasInclude) {
+			if (!include.includes(key)) continue;
+		}
 
-    const value = state[key];
+		const value = state[key];
 
-    if (Array.isArray(value)) {
-      store[key] = value.map((item) =>
-        typeof item === "object" && item !== null ? { ...item } : item
-      );
-    } else if (typeof value === "object" && value !== null) {
-      store[key] = { ...value };
-    } else {
-      store[key] = value;
-    }
-  }
+		if (Array.isArray(value)) {
+			store[key] = value.map((item) =>
+				typeof item === "object" && item !== null ? { ...item } : item,
+			);
+		} else if (typeof value === "object" && value !== null) {
+			store[key] = { ...value };
+		} else {
+			store[key] = value;
+		}
+	}
 }

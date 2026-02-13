@@ -22,6 +22,20 @@ from python.helpers.workspace import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _fake_project_root(tmp_path, monkeypatch):
+    """Make FileBrowser.__init__ accept tmp_path as a valid project root.
+
+    The project-root confinement check in FileBrowser compares base_dir
+    against files.get_base_dir().  In tests, base_dir is always under
+    tmp_path, so we point get_base_dir() at tmp_path.
+    """
+    monkeypatch.setattr(
+        "python.helpers.file_browser.files.get_base_dir",
+        lambda: str(tmp_path),
+    )
+
+
 # ---------------------------------------------------------------------------
 # 1. FileBrowser Path Confinement
 # ---------------------------------------------------------------------------

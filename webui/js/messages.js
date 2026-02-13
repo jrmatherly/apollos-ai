@@ -6,7 +6,8 @@ import {
 	copyToClipboard,
 	createActionButton,
 } from "/components/messages/action-buttons/simple-action-buttons.js";
-import { store as _messageResizeStore } from "/components/messages/resize/message-resize-store.js"; // keep here, required in html
+// biome-ignore lint/correctness/noUnusedImports: side-effect import required by html template
+import { store as _messageResizeStore } from "/components/messages/resize/message-resize-store.js";
 import { store as stepDetailStore } from "/components/modals/process-step-detail/step-detail-store.js";
 import { store as preferencesStore } from "/components/sidebar/bottom/preferences/preferences-store.js";
 import { store as imageViewerStore } from "../components/modals/image-viewer/image-viewer-store.js";
@@ -253,7 +254,6 @@ function drawProcessStep({
 	actionButtons = [],
 	log,
 	allowCompletedGroup = false,
-	...additional
 }) {
 	// group and steps DOM elements
 	const stepId = `process-step-${id}`;
@@ -348,7 +348,7 @@ function drawProcessStep({
 		}
 
 		// create step header
-		const stepHeader = ensureChild(
+		ensureChild(
 			step,
 			".process-step-header",
 			"div",
@@ -439,9 +439,9 @@ function drawProcessStep({
 		"step-action-buttons",
 	);
 	stepActionBtns.textContent = "";
-	(actionButtons || [])
-		.filter(Boolean)
-		.forEach((button) => stepActionBtns.appendChild(button));
+	(actionButtons || []).filter(Boolean).forEach((button) => {
+		stepActionBtns.appendChild(button);
+	});
 
 	// update the process grop header by this step
 	updateProcessGroupHeader(group);
@@ -670,9 +670,11 @@ export function _drawMessage({
 	}
 
 	// reapply scroll position or reset for collapsed
-	messageDiv.classList.contains("expanded")
-		? scroller.reApplyScroll()
-		: (bodyDiv.scrollTop = 0);
+	if (messageDiv.classList.contains("expanded")) {
+		scroller.reApplyScroll();
+	} else {
+		bodyDiv.scrollTop = 0;
+	}
 
 	return messageDiv;
 }
@@ -707,7 +709,6 @@ export function drawMessageDefault({
 	heading,
 	content,
 	kvps = null,
-	...additional
 }) {
 	const contentText = String(content ?? "");
 	const actionButtons = contentText.trim()
@@ -731,16 +732,8 @@ export function drawMessageDefault({
 	});
 }
 
-export function drawMessageAgent({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageAgent(logData) {
+	const { id, heading, kvps = null } = logData;
 	const title = cleanStepTitle(heading);
 	const displayKvps = {};
 	if (kvps?.thoughts) displayKvps["icon://lightbulb[Thoughts]"] = kvps.thoughts;
@@ -752,7 +745,7 @@ export function drawMessageAgent({
 	const actionButtons = [
 		createActionButton("detail", "", () =>
 			stepDetailStore.showStepDetail(
-				buildDetailPayload(arguments[0], { headerLabels }),
+				buildDetailPayload(logData, { headerLabels }),
 			),
 		),
 	];
@@ -773,20 +766,12 @@ export function drawMessageAgent({
 		classes: null,
 		kvps: displayKvps,
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageResponse({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageResponse(logData) {
+	const { id, type, heading, content, agentno = 0 } = logData;
 	// response of subordinate agent - render as process step
 	if (agentno && agentno > 0) {
 		const title = getStepTitle(heading, content, type);
@@ -805,10 +790,10 @@ export function drawMessageResponse({
 			type,
 			heading,
 			content,
-			timestamp,
+			timestamp: logData.timestamp,
 			agentno,
 			actionButtons,
-			log: arguments[0],
+			log: logData,
 		});
 	}
 
@@ -823,7 +808,7 @@ export function drawMessageResponse({
 		if (group) {
 			// new response, collapse all previous steps once
 			if (!group.querySelector(".process-group-response")) {
-				if (preferencesStore.detailMode == "current")
+				if (preferencesStore.detailMode === "current")
 					group.querySelectorAll(".process-step").forEach((step) => {
 						scheduleStepCollapse(step);
 					});
@@ -880,7 +865,6 @@ export function drawMessageUser({
 	heading,
 	content,
 	kvps = null,
-	...additional
 }) {
 	// end last process group on any user message
 	completeLastProcessGroup();
@@ -923,7 +907,7 @@ export function drawMessageUser({
 
 	// Handle attachments
 	let attachmentsContainer = messageDiv.querySelector(".attachments-container");
-	if (kvps && kvps.attachments && kvps.attachments.length > 0) {
+	if (kvps?.attachments?.length > 0) {
 		if (!attachmentsContainer) {
 			attachmentsContainer = document.createElement("div");
 			attachmentsContainer.classList.add("attachments-container");
@@ -982,7 +966,7 @@ export function drawMessageUser({
 
 	// Render heading below message, if provided
 	let headingElement = messageDiv.querySelector(".message-user-heading");
-	if (heading && heading.trim() && heading.trim() !== "User message") {
+	if (heading?.trim() && heading.trim() !== "User message") {
 		if (!headingElement) {
 			headingElement = document.createElement("div");
 			headingElement.className = "message-user-heading shiny-text";
@@ -1008,54 +992,35 @@ export function drawMessageUser({
 		"step-action-buttons",
 	);
 	actionButtonsContainer.textContent = "";
-	userActionButtons.forEach((button) =>
-		actionButtonsContainer.appendChild(button),
-	);
+	userActionButtons.forEach((button) => {
+		actionButtonsContainer.appendChild(button);
+	});
 }
 
-export function drawMessageTool({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
-	const tool_name = kvps?._tool_name || "";
+export function drawMessageTool(logData) {
+	const tool_name = logData.kvps?._tool_name || "";
 
 	if (!tool_name) {
-		return drawMessageToolSimple({ ...arguments[0] });
-	} else if (kvps._tool_name === "skills_tool") {
-		return drawMessageToolSimple({ ...arguments[0], code: "SKL" });
-	} else if (kvps._tool_name === "vision_load") {
-		return drawMessageToolSimple({ ...arguments[0], code: "EYE" });
-	} else if (kvps._tool_name === "search_engine") {
-		return drawMessageToolSimple({ ...arguments[0], code: "WEB" });
-	} else if (kvps._tool_name === "browser_agent") {
-		return drawMessageToolSimple({ ...arguments[0], code: "WWW" });
-	} else if (kvps._tool_name.startsWith("memory_")) {
-		return drawMessageToolSimple({ ...arguments[0], code: "MEM" });
+		return drawMessageToolSimple({ ...logData });
+	} else if (tool_name === "skills_tool") {
+		return drawMessageToolSimple({ ...logData, code: "SKL" });
+	} else if (tool_name === "vision_load") {
+		return drawMessageToolSimple({ ...logData, code: "EYE" });
+	} else if (tool_name === "search_engine") {
+		return drawMessageToolSimple({ ...logData, code: "WEB" });
+	} else if (tool_name === "browser_agent") {
+		return drawMessageToolSimple({ ...logData, code: "WWW" });
+	} else if (tool_name.startsWith("memory_")) {
+		return drawMessageToolSimple({ ...logData, code: "MEM" });
 	} else {
-		return drawMessageToolSimple({ ...arguments[0] });
+		return drawMessageToolSimple({ ...logData });
 	}
 }
 
-export function drawMessageToolSimple({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	code,
-	displayKvps,
-	...additional
-}) {
+export function drawMessageToolSimple(logData) {
+	const { id, heading, content, kvps = null, code } = logData;
 	const title = cleanStepTitle(heading);
-	displayKvps = displayKvps || { ...kvps };
+	const resolvedKvps = logData.displayKvps || { ...kvps };
 	const headerLabels = [
 		kvps?._tool_name && { label: kvps._tool_name, class: "tool-name-badge" },
 	].filter(Boolean);
@@ -1064,7 +1029,7 @@ export function drawMessageToolSimple({
 		? [
 				createActionButton("detail", "", () =>
 					stepDetailStore.showStepDetail(
-						buildDetailPayload(arguments[0], { headerLabels }),
+						buildDetailPayload(logData, { headerLabels }),
 					),
 				),
 				createActionButton("speak", "", () => speechStore.speak(contentText)),
@@ -1077,24 +1042,15 @@ export function drawMessageToolSimple({
 		title,
 		code: code || "USE",
 		classes: null,
-		kvps: displayKvps,
+		kvps: resolvedKvps,
 		content,
-		// contentClasses: [],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageCodeExe({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageCodeExe(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	let title = "Code Execution";
 	// show command at the start and end
 	if (kvps?.code && /done_all|code_execution_tool/.test(heading || "")) {
@@ -1107,8 +1063,6 @@ export function drawMessageCodeExe({
 
 	// KVPS to show
 	const displayKvps = {};
-	// if (kvps?.runtime) displayKvps.runtime = kvps.runtime;
-	// if (kvps?.session>=0) displayKvps.session = kvps.session;
 
 	const headerLabels = [
 		kvps?.runtime && { label: kvps.runtime, class: "tool-name-badge" },
@@ -1124,7 +1078,7 @@ export function drawMessageCodeExe({
 	const actionButtons = [
 		createActionButton("detail", "", () =>
 			stepDetailStore.showStepDetail(
-				buildDetailPayload(arguments[0], { headerLabels }),
+				buildDetailPayload(logData, { headerLabels }),
 			),
 		),
 		commandText.trim()
@@ -1136,7 +1090,7 @@ export function drawMessageCodeExe({
 			? createActionButton("copy", "Output", () => copyToClipboard(outputText))
 			: null,
 	].filter(Boolean);
-	const stepData = drawProcessStep({
+	drawProcessStep({
 		id,
 		title,
 		code: "EXE",
@@ -1145,20 +1099,12 @@ export function drawMessageCodeExe({
 		content,
 		contentClasses: ["terminal-output"],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageBrowser({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageBrowser(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading);
 	const displayKvps = { ...kvps };
 	const answerText = String(kvps?.answer ?? "");
@@ -1166,7 +1112,7 @@ export function drawMessageBrowser({
 		? [
 				createActionButton("detail", "", () =>
 					stepDetailStore.showStepDetail(
-						buildDetailPayload(arguments[0], { headerLabels: [] }),
+						buildDetailPayload(logData, { headerLabels: [] }),
 					),
 				),
 				createActionButton("speak", "", () => speechStore.speak(answerText)),
@@ -1181,22 +1127,13 @@ export function drawMessageBrowser({
 		classes: null,
 		kvps: displayKvps,
 		content,
-		// contentClasses: [],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageMcp({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageMcp(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading);
 	const displayKvps = { ...kvps };
 	const headerLabels = [
@@ -1207,7 +1144,7 @@ export function drawMessageMcp({
 		? [
 				createActionButton("detail", "", () =>
 					stepDetailStore.showStepDetail(
-						buildDetailPayload(arguments[0], { headerLabels }),
+						buildDetailPayload(logData, { headerLabels }),
 					),
 				),
 				createActionButton("speak", "", () => speechStore.speak(contentText)),
@@ -1222,22 +1159,13 @@ export function drawMessageMcp({
 		classes: null,
 		kvps: displayKvps,
 		content,
-		// contentClasses: [],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageSubagent({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageSubagent(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading);
 	const displayKvps = { ...kvps };
 	const headerLabels = [
@@ -1248,7 +1176,7 @@ export function drawMessageSubagent({
 		? [
 				createActionButton("detail", "", () =>
 					stepDetailStore.showStepDetail(
-						buildDetailPayload(arguments[0], { headerLabels }),
+						buildDetailPayload(logData, { headerLabels }),
 					),
 				),
 				createActionButton("speak", "", () => speechStore.speak(contentText)),
@@ -1263,19 +1191,13 @@ export function drawMessageSubagent({
 		classes: null,
 		kvps: displayKvps,
 		content,
-		// contentClasses: [],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageInfo({
-	id,
-	heading,
-	content,
-	kvps = null,
-	...additional
-}) {
+export function drawMessageInfo(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading || content);
 	const displayKvps = { ...kvps };
 	const contentText = String(content ?? "");
@@ -1293,22 +1215,13 @@ export function drawMessageInfo({
 		classes: null,
 		kvps: displayKvps,
 		content,
-		// contentClasses: [],
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageUtil({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageUtil(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading || content);
 	const contentText = String(content ?? "");
 	const actionButtons = contentText.trim()
@@ -1326,7 +1239,7 @@ export function drawMessageUtil({
 		kvps,
 		content,
 		actionButtons,
-		log: arguments[0],
+		log: logData,
 		allowCompletedGroup: true,
 	});
 
@@ -1342,7 +1255,6 @@ export function drawMessageHint({
 	kvps = null,
 	timestamp = null,
 	agentno = 0,
-	...additional
 }) {
 	const title = getStepTitle(heading, content, type);
 	const contentText = String(content ?? "");
@@ -1368,16 +1280,8 @@ export function drawMessageHint({
 	});
 }
 
-export function drawMessageProgress({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	timestamp = null,
-	agentno = 0,
-	...additional
-}) {
+export function drawMessageProgress(logData) {
+	const { id, heading, content, kvps = null } = logData;
 	const title = cleanStepTitle(heading || content);
 	const displayKvps = { ...kvps };
 
@@ -1388,20 +1292,13 @@ export function drawMessageProgress({
 		classes: null,
 		kvps: displayKvps,
 		content,
-		// contentClasses: [],
 		actionButtons: [],
-		log: arguments[0],
+		log: logData,
 	});
 }
 
-export function drawMessageWarning({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	...additional
-}) {
+export function drawMessageWarning(logData) {
+	const { id, type, heading, content, kvps = null } = logData;
 	const title = getStepTitle(heading, content, type);
 	const displayKvps = { ...kvps };
 	const contentText = String(content ?? "");
@@ -1419,12 +1316,10 @@ export function drawMessageWarning({
 			id,
 			title,
 			code: "WRN",
-			// classes: null,
 			kvps: displayKvps,
 			content,
-			// contentClasses: [],
 			actionButtons,
-			log: arguments[0],
+			log: logData,
 		});
 	}
 
@@ -1441,21 +1336,15 @@ export function drawMessageWarning({
 	});
 }
 
-export function drawMessageError({
-	id,
-	type,
-	heading,
-	content,
-	kvps = null,
-	...additional
-}) {
+export function drawMessageError(logData) {
+	const { id, type, heading, content, kvps = null } = logData;
 	const contentText = String(content ?? "");
 	const title = getStepTitle(heading, content, type);
 	const displayKvps = { ...kvps };
 	const actionButtons = [
 		createActionButton("detail", "", () =>
 			stepDetailStore.showStepDetail(
-				buildDetailPayload(arguments[0], { headerLabels: [] }),
+				buildDetailPayload(logData, { headerLabels: [] }),
 			),
 		),
 		contentText.trim()
@@ -1606,7 +1495,7 @@ function convertImageTags(content) {
 	// Replace <image> tags with <img> tags with base64 source
 	const updatedContent = content.replace(
 		imageTagRegex,
-		(match, base64Content) => {
+		(_match, base64Content) => {
 			return `<img src="data:image/jpeg;base64,${base64Content}" alt="Image Attachment" style="max-width: 250px !important;"/>`;
 		},
 	);
@@ -1649,7 +1538,7 @@ function convertPathsToLinks(str) {
 		let conc = "";
 		let html = "";
 		for (const part of parts) {
-			conc += "/" + part;
+			conc += `/${part}`;
 			html += `/<a href="#" class="path-link" onclick="openFileLink('${conc}');">${part}</a>`;
 		}
 		return html;
@@ -1742,10 +1631,10 @@ function adjustMarkdownRender(element) {
 		link.href = img.src;
 		img.parentNode.insertBefore(link, img);
 		link.appendChild(img);
-		link.onclick = (e) => (
-			e.preventDefault(),
-			imageViewerStore.open(img.src, { name: img.alt || "Image" })
-		);
+		link.onclick = (e) => {
+			e.preventDefault();
+			imageViewerStore.open(img.src, { name: img.alt || "Image" });
+		};
 	});
 }
 
@@ -1805,6 +1694,7 @@ function createProcessGroup(id) {
 /**
  * Create or get nested container within a parent step
  */
+// biome-ignore lint/correctness/noUnusedVariables: reserved for nested agent UI (see drawProcessStep commented code)
 function getNestedContainer(parentStep) {
 	let nestedContainer = parentStep.querySelector(".process-nested-container");
 
@@ -1902,6 +1792,7 @@ function cancelStepCollapse(stepElement) {
 /**
  * Find parent delegation step for nested agents (DOM-first, reverse scan).
  */
+// biome-ignore lint/correctness/noUnusedVariables: reserved for nested agent UI (see drawProcessStep commented code)
 function findParentDelegationStep(group, agentno) {
 	if (!group || !agentno || agentno <= 0) return null;
 	const steps = group.querySelectorAll(".process-step");
@@ -1923,11 +1814,11 @@ function findParentDelegationStep(group, agentno) {
  */
 function getStepTitle(heading, content, type) {
 	// Try to get a meaningful title from heading or kvps
-	if (heading && heading.trim()) {
+	if (heading?.trim()) {
 		return cleanStepTitle(heading, 60);
 	}
 
-	if (content && content.trim()) {
+	if (content?.trim()) {
 		return cleanStepTitle(content, 60);
 	}
 
@@ -1946,7 +1837,7 @@ export function convertIcons(html, classes = "") {
 
 	return String(html).replace(
 		/icon:\/\/([a-zA-Z0-9_]+)(\[(?:\\.|[^\]])*\])?/g,
-		(match, iconName, tooltipBlock) => {
+		(_match, iconName, tooltipBlock) => {
 			if (!tooltipBlock) {
 				return `<span class="icon material-symbols-outlined ${classes}">${iconName}</span>`;
 			}
@@ -2143,7 +2034,7 @@ function truncateText(text, maxLength) {
 	if (!text) return "";
 	text = String(text).trim();
 	if (text.length <= maxLength) return text;
-	return text.substring(0, maxLength - 3) + "...";
+	return `${text.substring(0, maxLength - 3)}...`;
 }
 
 // gets or creates a child DOM element
@@ -2186,11 +2077,14 @@ function setupCollapsible(
 	btn.onclick = () => {
 		messageDiv.classList.toggle("expanded");
 		syncBtn();
-		messageDiv.classList.contains("expanded") ||
-			(messageDiv.querySelector(".message-body").scrollTop = 0);
+		if (!messageDiv.classList.contains("expanded")) {
+			messageDiv.querySelector(".message-body").scrollTop = 0;
+		}
 	};
 
-	actionButtons.filter(Boolean).forEach((b) => container.appendChild(b));
+	actionButtons.filter(Boolean).forEach((b) => {
+		container.appendChild(b);
+	});
 
 	// Detect overflow after render
 	requestAnimationFrame(() => {

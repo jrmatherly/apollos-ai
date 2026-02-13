@@ -345,7 +345,7 @@
   margin-top: 0;
   padding-top: 0;
   border-top: 1px solid transparent;
-  transition: grid-template-rows 0.25s ease-out, 
+  transition: grid-template-rows 0.25s ease-out,
               opacity 0.2s ease-out,
               margin-top 0.25s ease-out,
               padding-top 0.25s ease-out,
@@ -516,7 +516,7 @@
   width: fit-content;
   box-sizing: content-box;
   border-radius: var(--border-radius-sm);
-  -webkit-overflow-scrolling: touch; 
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   -ms-overflow-style: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -538,7 +538,7 @@
   font-size: var(--font-size-xs);
   line-height: 1.5;
   -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-  overscroll-behavior-x: contain; 
+  overscroll-behavior-x: contain;
 }
 
 /* .process-step-detail-scroll pre {
@@ -575,6 +575,7 @@
 
 .process-step-detail-scroll .step-kvp-key .material-symbols-outlined {
   font-size: 0.9rem;
+  /* biome-ignore lint/complexity/noImportantStyles: override icon color inherited from parent specificity */
   color: var(--step-accent, var(--color-primary)) !important;
 }
 
@@ -734,6 +735,7 @@
   50% { opacity: 0.8; }
 }
 
+/* biome-ignore lint/complexity/noImportantStyles: required for gradient text animation effect */
 .step-title.shiny-text { color: transparent !important; -webkit-background-clip: text; background-clip: text; animation: shine 1s linear infinite; }
     @keyframes shine { to { background-position: -100% center; } }
 
@@ -742,11 +744,11 @@
   .process-group {
     padding: var(--spacing-xs) var(--spacing-sm);
   }
-  
+
   .process-step-header .step-title {
     font-size: var(--font-size-xs);
   }
-  
+
   .process-step-detail-scroll {
     margin-left: 0;
   }

@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "lib": [
+      "ES2020"
+    ],
     "paths": {
       "*": [
         "webui/*"
