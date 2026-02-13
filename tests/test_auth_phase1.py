@@ -752,6 +752,7 @@ class TestRequiresAuthDecorator:
         from run_ui import requires_auth
 
         monkeypatch.setattr("python.helpers.login.get_credentials_hash", lambda: "hash")
+        monkeypatch.setattr("python.helpers.login.is_login_required", lambda: True)
 
         app = Flask("test")
         app.secret_key = "test-secret"
