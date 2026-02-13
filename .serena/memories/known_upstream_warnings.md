@@ -41,4 +41,4 @@
 | litellm | 1.79.3 | 1.81.9 | Not for warnings; separate eval |
 
 ## Analysis Document
-- `.scratchpad/deprecation-warnings-analysis.md` — Full research with code paths, upstream references, and implementation plan
+- `.scratchpad/completed/deprecation-warnings-analysis.md` — Full research with code paths, upstream references, and implementation plan

@@ -48,5 +48,5 @@ A0_SET_CONSOLIDATION_REPLACE_THRESHOLD=0.75
 - Batch size 16 is conservative for Azure OpenAI compatibility
 
 ## Plan Documentation
-- Full plan: `.scratchpad/embedding-plan/` (8 files)
-- Bot42 review: `.scratchpad/embedding-plan-review.md`
+- Full plan: `.scratchpad/completed/embedding-plan` (8 files)
+- Bot42 review: `.scratchpad/completed/embedding-plan/completed/cross-agent-reviews/embedding-plan-review.md`

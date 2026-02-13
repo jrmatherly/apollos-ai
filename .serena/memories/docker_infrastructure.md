@@ -57,6 +57,25 @@ docker:run                  Run local container (port 50080→80)
 ### Dead Scripts Removed
 - `install_additional.sh` — was entirely commented out, no longer referenced
 
+## Supervisord Configuration
+
+File: `docker/run/fs/etc/supervisor/conf.d/supervisord.conf`
+
+### Logging
+- `logfile=/dev/null` + `loglevel=warn` — eliminates duplicate supervisord meta-messages from container logs
+- Each `[program:*]` section has `stdout_logfile=/dev/stdout` for program output
+- Only warnings/errors from supervisord itself appear; program output is unaffected
+
+### Rich Console Width (fastmcp)
+- `[program:run_ui]` has `environment=COLUMNS="200",LINES="50"`
+- Prevents Rich library (used by fastmcp) from word-wrapping at 80 columns in Docker
+- Rich checks `COLUMNS` env var before `os.get_terminal_size()` fallback
+
+### Structured Startup Output
+- PrintStyle class (`python/helpers/print_style.py`) provides `banner()`, `phase()`, `step()`, `ready()` methods
+- Startup sequence uses emoji-annotated phases with tree-style indented steps
+- Shell scripts use emoji prefixes for container-level messages
+
 ## Build References
 - `docker/base/build.txt` — Manual build commands for base image (local + GHCR + multi-arch)
 - `docker/run/build.txt` — Manual build commands for app image (local + GHCR + multi-arch)

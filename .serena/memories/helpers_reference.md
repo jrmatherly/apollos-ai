@@ -73,7 +73,7 @@
 | `state_monitor.py` | State change monitoring |
 | `state_monitor_integration.py` | Integration hooks for state monitor |
 | `state_snapshot.py` | Snapshot capture for debugging |
-| `print_style.py` | Terminal output styling (colors, padding) |
+| `print_style.py` | Terminal output styling (colors, padding) + structured startup output (`banner`, `phase`, `step`, `ready`) |
 | `print_catch.py` | Print output interception |
 
 ### WebSocket (3)
