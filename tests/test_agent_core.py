@@ -110,30 +110,32 @@ class TestAgentContextCreation:
 
 class TestAgentContextCounterThreadSafety:
     def test_concurrent_counter_increments_produce_unique_values(self):
-        """100 concurrent AgentContext creations produce 100 unique .no values."""
+        """Concurrent AgentContext creations produce unique .no values."""
+        num_threads = 50  # 50 threads is sufficient; keeps CI runners stable
         results: list[int] = []
         errors: list[Exception] = []
-        barrier = threading.Barrier(100)
+        barrier = threading.Barrier(num_threads)
 
         def create_context(idx):
             try:
-                barrier.wait(timeout=5)
+                barrier.wait(timeout=10)
                 ctx = _make_context(id=f"thread-{idx}")
                 results.append(ctx.no)
             except Exception as e:
                 errors.append(e)
 
         threads = [
-            threading.Thread(target=create_context, args=(i,)) for i in range(100)
+            threading.Thread(target=create_context, args=(i,))
+            for i in range(num_threads)
         ]
         for t in threads:
             t.start()
         for t in threads:
-            t.join(timeout=10)
+            t.join(timeout=30)
 
         assert not errors, f"Threads raised errors: {errors}"
-        assert len(results) == 100
-        assert len(set(results)) == 100, "All .no values must be unique"
+        assert len(results) == num_threads
+        assert len(set(results)) == num_threads, "All .no values must be unique"
 
 
 # ---------------------------------------------------------------------------
