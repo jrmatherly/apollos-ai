@@ -83,6 +83,8 @@ webapp.config.update(
     + runtime.get_runtime_id(),  # bind the session cookie name to runtime id to prevent session collision on same host
     SESSION_COOKIE_SAMESITE="Lax",  # Lax required for OIDC redirect-back
     SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=os.getenv("SESSION_COOKIE_SECURE", "").lower()
+    in ("true", "1", "yes"),
     SESSION_PERMANENT=True,
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
     MAX_CONTENT_LENGTH=int(

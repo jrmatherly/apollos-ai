@@ -18,12 +18,14 @@
 
 {$DOMAIN:localhost} {
 	# Custom certificates (default) — comment this line for automatic HTTPS
-	# tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
-	tls internal
+	tls /etc/caddy/certs/cert.pem /etc/caddy/certs/key.pem
+	# Local development — uncomment below (and comment the line above) for self-signed:
+	# tls internal
 
 	reverse_proxy apollos-ai:80 {
 		# WebSocket support for Socket.IO
-		header_up X-Forwarded-Proto {scheme}
+		# Note: Caddy automatically sets X-Forwarded-For, X-Forwarded-Proto,
+		# and X-Forwarded-Host. We explicitly set X-Real-IP for app logging.
 		header_up X-Real-IP {remote_host}
 
 		# Flush immediately for streaming responses

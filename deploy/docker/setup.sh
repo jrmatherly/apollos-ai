@@ -140,11 +140,24 @@ if [[ " ${PROFILES[*]} " =~ " postgres " ]]; then
     fi
 fi
 
+# ─── CORS for custom domain ──────────────────────────────────────────
+if [[ " ${PROFILES[*]} " =~ " proxy " ]]; then
+    # Read DOMAIN from .env to auto-configure CORS
+    DOMAIN_VAL=$(grep '^DOMAIN=' .env 2>/dev/null | cut -d= -f2)
+    if [ -n "$DOMAIN_VAL" ] && [ "$DOMAIN_VAL" != "localhost" ]; then
+        if grep -q '^# CORS_ALLOWED_ORIGINS=' .env 2>/dev/null; then
+            sed -i.bak "s|^# CORS_ALLOWED_ORIGINS=.*|CORS_ALLOWED_ORIGINS=https://${DOMAIN_VAL}|" .env
+            rm -f .env.bak
+            ok "Set CORS_ALLOWED_ORIGINS=https://${DOMAIN_VAL}"
+        fi
+    fi
+fi
+
 # ─── Certs directory ──────────────────────────────────────────────────
 if [[ " ${PROFILES[*]} " =~ " proxy " ]]; then
     mkdir -p certs/ca
-    # Check what TLS mode the Caddyfile is using
-    if grep -q 'tls internal' Caddyfile 2>/dev/null; then
+    # Check what TLS mode the Caddyfile is using (only match uncommented lines)
+    if grep -q '^[[:space:]]*tls internal' Caddyfile 2>/dev/null; then
         ok "Caddyfile is using internal TLS (self-signed) — no certificate files needed."
     elif [ ! -f certs/cert.pem ] || [ ! -f certs/key.pem ]; then
         warn "No TLS certificates found in certs/"
