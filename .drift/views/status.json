@@ -1,75 +1,68 @@
 {
-  "generatedAt": "2026-02-11T07:46:03.515Z",
+  "generatedAt": "2026-02-13T18:44:59.817Z",
   "health": {
-    "score": 92,
+    "score": 91,
     "trend": "stable",
     "factors": [
       {
         "name": "Pattern Approval Rate",
-        "score": 0.9960369881109643,
+        "score": 0.9716494845360825,
         "weight": 0.3,
         "trend": "stable"
       },
       {
         "name": "High Confidence Patterns",
-        "score": 0.8388375165125496,
+        "score": 0.8479381443298969,
         "weight": 0.3,
         "trend": "stable"
       },
       {
         "name": "Low Outlier Rate",
-        "score": 0.9992985886753953,
+        "score": 0.9993491252638015,
         "weight": 0.4,
         "trend": "stable"
       }
     ]
   },
   "patterns": {
-    "total": 757,
+    "total": 776,
     "approved": 754,
-    "discovered": 0,
+    "discovered": 19,
     "ignored": 3,
     "byCategory": {
-      "structural": 61,
-      "components": 62,
-      "styling": 60,
+      "structural": 63,
+      "components": 63,
+      "styling": 61,
       "api": 11,
-      "auth": 44,
-      "errors": 54,
-      "data-access": 81,
-      "testing": 55,
+      "auth": 48,
+      "errors": 55,
+      "data-access": 83,
+      "testing": 56,
       "logging": 49,
-      "security": 56,
-      "config": 47,
+      "security": 57,
+      "config": 48,
       "types": 59,
-      "performance": 46,
-      "accessibility": 37,
-      "documentation": 35
+      "performance": 48,
+      "accessibility": 39,
+      "documentation": 36
     }
   },
   "issues": {
     "critical": 1,
-    "warnings": 2,
+    "warnings": 1,
     "topIssues": [
       {
-        "id": "outlier-bd04d00b24d6c135",
+        "id": "outlier-687d386d0cd99488",
         "type": "outlier",
         "severity": "critical",
         "message": "Response Envelope Detector has 31 outliers",
-        "patternId": "bd04d00b24d6c135"
-      },
-      {
-        "id": "outlier-84741639ced8441f",
-        "type": "outlier",
-        "severity": "warning",
-        "message": "HTTP Methods Detector has 1 outliers",
-        "patternId": "84741639ced8441f"
+        "patternId": "687d386d0cd99488"
       },
       {
         "id": "outlier-dc6271e44e31a1d3",
         "type": "outlier",
         "severity": "warning",
-        "message": "Route Structure Detector has 1 outliers",
+        "message": "Route Structure Detector has 2 outliers",
         "patternId": "dc6271e44e31a1d3"
       }
     ]
@@ -80,10 +73,10 @@
     "riskLevel": "low"
   },
   "lastScan": {
-    "timestamp": "2026-02-11T07:46:03.490Z",
-    "duration": 1000839,
-    "filesScanned": 1091,
-    "patternsFound": 757,
+    "timestamp": "2026-02-13T18:44:59.772Z",
+    "duration": 1130729,
+    "filesScanned": 1176,
+    "patternsFound": 776,
     "errors": 0
   }
 }

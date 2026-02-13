@@ -15,81 +15,95 @@
         }
       },
       "confidence": {
-        "frequency": 0.24,
+        "frequency": 0.31,
         "consistency": 0.9,
         "age": 0,
-        "spread": 24,
+        "spread": 31,
         "score": 0.95,
         "level": "high"
       },
       "locations": [
         {
           "file": "python/api/api_files_get.py",
-          "line": 54,
+          "line": 59,
           "column": 55,
           "isOutlier": false,
           "confidence": 1
         },
         {
           "file": "python/api/api_message.py",
-          "line": 57,
+          "line": 62,
           "column": 47,
           "isOutlier": false,
           "confidence": 1
         },
         {
           "file": "python/api/image_get.py",
-          "line": 160,
+          "line": 169,
           "column": 35,
           "isOutlier": false,
           "confidence": 1
         },
         {
-          "file": "python/api/message.py",
-          "line": 33,
-          "column": 47,
-          "isOutlier": false,
-          "confidence": 1
-        },
-        {
           "file": "python/api/skills.py",
-          "line": 42,
+          "line": 46,
           "column": 31,
           "isOutlier": false,
           "confidence": 1
         },
         {
           "file": "python/api/skills_import.py",
-          "line": 43,
+          "line": 47,
           "column": 38,
           "isOutlier": false,
           "confidence": 1
         },
         {
           "file": "python/api/skills_import_preview.py",
-          "line": 43,
+          "line": 47,
           "column": 38,
           "isOutlier": false,
           "confidence": 1
         },
         {
-          "file": "python/api/upload.py",
-          "line": 21,
-          "column": 41,
+          "file": "python/helpers/auth_bootstrap.py",
+          "line": 23,
+          "column": 34,
           "isOutlier": false,
           "confidence": 1
         },
         {
           "file": "python/helpers/dotenv.py",
-          "line": 20,
+          "line": 21,
           "column": 20,
           "isOutlier": false,
           "confidence": 1
         },
         {
+          "file": "python/helpers/mcp_server.py",
+          "line": 265,
+          "column": 34,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
           "file": "python/helpers/memory.py",
-          "line": 137,
+          "line": 130,
           "column": 32,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "python/helpers/multiuser_migration.py",
+          "line": 31,
+          "column": 30,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "python/helpers/persist_chat.py",
+          "line": 103,
+          "column": 30,
           "isOutlier": false,
           "confidence": 1
         },
@@ -116,7 +130,7 @@
         },
         {
           "file": "python/helpers/settings.py",
-          "line": 233,
+          "line": 238,
           "column": 31,
           "isOutlier": false,
           "confidence": 1
@@ -157,6 +171,13 @@
           "confidence": 1
         },
         {
+          "file": "python/helpers/workspace.py",
+          "line": 12,
+          "column": 30,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
           "file": "python/tools/browser_agent.py",
           "line": 59,
           "column": 46,
@@ -172,8 +193,22 @@
         },
         {
           "file": "run_ui.py",
-          "line": 233,
+          "line": 386,
           "column": 8,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "tests/test_auth_phase1.py",
+          "line": 678,
+          "column": 10,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "tests/test_file_browser_isolation.py",
+          "line": 217,
+          "column": 51,
           "isOutlier": false,
           "confidence": 1
         },
@@ -185,8 +220,22 @@
           "confidence": 1
         },
         {
+          "file": "tests/test_phase5_cross_tenant.py",
+          "line": 81,
+          "column": 41,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "tests/test_phase5_mcp_auth.py",
+          "line": 102,
+          "column": 41,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
           "file": "tests/test_websocket_namespace_discovery.py",
-          "line": 226,
+          "line": 221,
           "column": 18,
           "isOutlier": false,
           "confidence": 1
@@ -194,8 +243,8 @@
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.881Z",
-        "lastSeen": "2026-02-11T07:46:02.881Z",
+        "firstSeen": "2026-02-13T18:44:59.110Z",
+        "lastSeen": "2026-02-13T18:44:59.110Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -218,10 +267,10 @@
         }
       },
       "confidence": {
-        "frequency": 0.03,
+        "frequency": 0.06,
         "consistency": 0.9,
         "age": 0,
-        "spread": 3,
+        "spread": 6,
         "score": 0.95,
         "level": "high"
       },
@@ -234,8 +283,22 @@
           "confidence": 1
         },
         {
+          "file": "python/helpers/update_check.py",
+          "line": 23,
+          "column": 30,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "tests/test_auth_phase1.py",
+          "line": 678,
+          "column": 10,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
           "file": "tests/test_fasta2a_client.py",
-          "line": 163,
+          "line": 161,
           "column": 23,
           "isOutlier": false,
           "confidence": 1
@@ -246,12 +309,19 @@
           "column": 6,
           "isOutlier": false,
           "confidence": 1
+        },
+        {
+          "file": "tests/test_security.py",
+          "line": 485,
+          "column": 24,
+          "isOutlier": false,
+          "confidence": 1
         }
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.882Z",
-        "lastSeen": "2026-02-11T07:46:02.882Z",
+        "firstSeen": "2026-02-13T18:44:59.110Z",
+        "lastSeen": "2026-02-13T18:44:59.110Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -274,26 +344,33 @@
         }
       },
       "confidence": {
-        "frequency": 0.01,
+        "frequency": 0.02,
         "consistency": 0.9,
         "age": 0,
-        "spread": 1,
+        "spread": 2,
         "score": 0.95,
         "level": "high"
       },
       "locations": [
         {
-          "file": "python/helpers/update_check.py",
-          "line": 17,
-          "column": 26,
+          "file": "tests/test_auth_phase1.py",
+          "line": 834,
+          "column": 24,
+          "isOutlier": false,
+          "confidence": 1
+        },
+        {
+          "file": "tests/test_security.py",
+          "line": 549,
+          "column": 20,
           "isOutlier": false,
           "confidence": 1
         }
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.882Z",
-        "lastSeen": "2026-02-11T07:46:02.882Z",
+        "firstSeen": "2026-02-13T18:44:59.111Z",
+        "lastSeen": "2026-02-13T18:44:59.111Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -316,14 +393,21 @@
         }
       },
       "confidence": {
-        "frequency": 0.01,
+        "frequency": 0.02,
         "consistency": 0.9,
         "age": 0,
-        "spread": 1,
+        "spread": 2,
         "score": 0.95,
         "level": "high"
       },
       "locations": [
+        {
+          "file": "tests/test_auth_phase1.py",
+          "line": 678,
+          "column": 10,
+          "isOutlier": false,
+          "confidence": 1
+        },
         {
           "file": "tests/test_http_auth_csrf.py",
           "line": 12,
@@ -334,8 +418,8 @@
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.883Z",
-        "lastSeen": "2026-02-11T07:46:02.883Z",
+        "firstSeen": "2026-02-13T18:44:59.111Z",
+        "lastSeen": "2026-02-13T18:44:59.111Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -358,14 +442,21 @@
         }
       },
       "confidence": {
-        "frequency": 0.22,
+        "frequency": 0.23,
         "consistency": 0.9,
         "age": 0,
-        "spread": 22,
+        "spread": 23,
         "score": 0.95,
         "level": "high"
       },
       "locations": [
+        {
+          "file": ".agents/skills/shadcn-ui/examples/form-pattern.tsx",
+          "line": 32,
+          "column": 31,
+          "isOutlier": false,
+          "confidence": 1
+        },
         {
           "file": "webui/components/chat/attachments/attachmentsStore.js",
           "line": 349,
@@ -382,8 +473,8 @@
         },
         {
           "file": "webui/components/modals/file-browser/file-browser-store.js",
-          "line": 93,
-          "column": 9,
+          "line": 104,
+          "column": 5,
           "isOutlier": false,
           "confidence": 1
         },
@@ -431,8 +522,8 @@
         },
         {
           "file": "webui/js/messages.js",
-          "line": 459,
-          "column": 3,
+          "line": 460,
+          "column": 2,
           "isOutlier": false,
           "confidence": 1
         },
@@ -523,8 +614,8 @@
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.883Z",
-        "lastSeen": "2026-02-11T07:46:02.883Z",
+        "firstSeen": "2026-02-13T18:44:59.104Z",
+        "lastSeen": "2026-02-13T18:44:59.104Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -547,14 +638,21 @@
         }
       },
       "confidence": {
-        "frequency": 0.16,
+        "frequency": 0.17,
         "consistency": 0.9,
         "age": 0,
-        "spread": 16,
+        "spread": 17,
         "score": 0.95,
         "level": "high"
       },
       "locations": [
+        {
+          "file": ".agents/skills/shadcn-ui/examples/form-pattern.tsx",
+          "line": 32,
+          "column": 31,
+          "isOutlier": false,
+          "confidence": 1
+        },
         {
           "file": "webui/components/modals/scheduler/scheduler-store.js",
           "line": 158,
@@ -668,10 +766,228 @@
           "confidence": 1
         }
       ],
-      "outliers": [],
+      "outliers": [
+        {
+          "file": "webui/components/modals/file-browser/file-browser-store.js",
+          "line": 182,
+          "column": 3,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 158,
+          "column": 3,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 204,
+          "column": 3,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 213,
+          "column": 3,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 791,
+          "column": 5,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 130,
+          "column": 15,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 140,
+          "column": 3,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 483,
+          "column": 37,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 507,
+          "column": 45,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/modals/scheduler/scheduler-store.js",
+          "line": 853,
+          "column": 5,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/projects/projects-store.js",
+          "line": 501,
+          "column": 5,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 367,
+          "column": 9,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 530,
+          "column": 7,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 619,
+          "column": 7,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 657,
+          "column": 9,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 716,
+          "column": 7,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 770,
+          "column": 7,
+          "reason": "Response envelope is missing a data field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 367,
+          "column": 9,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 530,
+          "column": 7,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 619,
+          "column": 7,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 657,
+          "column": 9,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 716,
+          "column": 7,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 770,
+          "column": 7,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 691,
+          "column": 35,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 747,
+          "column": 35,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/settings/developer/websocket-test-store.js",
+          "line": 761,
+          "column": 35,
+          "reason": "Response envelope is missing an error field",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/welcome/welcome-store.js",
+          "line": 47,
+          "column": 3,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/welcome/welcome-store.js",
+          "line": 60,
+          "column": 4,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/components/welcome/welcome-store.js",
+          "line": 138,
+          "column": 3,
+          "reason": "Direct array/data return without envelope wrapper",
+          "deviationScore": 0.4
+        },
+        {
+          "file": "webui/index.js",
+          "line": 282,
+          "column": 3,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        },
+        {
+          "file": "webui/index.js",
+          "line": 326,
+          "column": 7,
+          "reason": "Response uses custom format but project predominantly uses standard",
+          "deviationScore": 0.7
+        }
+      ],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.883Z",
-        "lastSeen": "2026-02-11T07:46:02.883Z",
+        "firstSeen": "2026-02-13T18:44:59.104Z",
+        "lastSeen": "2026-02-13T18:44:59.104Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -712,8 +1028,8 @@
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.883Z",
-        "lastSeen": "2026-02-11T07:46:02.883Z",
+        "firstSeen": "2026-02-13T18:44:59.111Z",
+        "lastSeen": "2026-02-13T18:44:59.111Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -754,8 +1070,8 @@
       ],
       "outliers": [],
       "metadata": {
-        "firstSeen": "2026-02-11T07:46:02.883Z",
-        "lastSeen": "2026-02-11T07:46:02.883Z",
+        "firstSeen": "2026-02-13T18:44:59.111Z",
+        "lastSeen": "2026-02-13T18:44:59.111Z",
         "source": "auto-detected",
         "tags": [
           "api",
@@ -766,6 +1082,6 @@
       "autoFixable": false
     }
   ],
-  "lastUpdated": "2026-02-11T07:46:02.916Z",
-  "checksum": "72f77abbbf7def02"
+  "lastUpdated": "2026-02-13T18:53:17.829Z",
+  "checksum": "6decf9bf972df9a4"
 }

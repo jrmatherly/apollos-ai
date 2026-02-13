@@ -548,6 +548,14 @@ run = "drift export --format ai-context"
 
 # --- Maintenance ---
 
+[tasks."drift:approve"]
+description = "Approve high confidence patterns"
+run = "drift approve --auto"
+
+[tasks."drift:approve:70"]
+description = "Approve patterns with confidence >= 70%"
+run = "drift approve --auto --threshold 0.70"
+
 [tasks."drift:audit"]
 description = "Audit patterns for duplicates and cross-reference issues"
 run = "drift audit"
