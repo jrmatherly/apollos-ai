@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import threading
 from datetime import datetime
 from enum import Enum
 from typing import Any, List, Sequence
@@ -62,34 +63,37 @@ class Memory:
         SOLUTIONS = "solutions"
 
     index: dict[str, "MyFaiss"] = {}
+    _index_lock = threading.Lock()
 
     @staticmethod
     async def get(agent: Agent):
         memory_subdir = get_agent_memory_subdir(agent)
-        if Memory.index.get(memory_subdir) is None:
-            log_item = agent.context.log.log(
-                type="util",
-                heading=f"Initializing VectorDB in '/{memory_subdir}'",
-            )
-            db, created = Memory.initialize(
-                log_item,
-                agent.config.embeddings_model,
-                memory_subdir,
-                False,
-            )
-            Memory.index[memory_subdir] = db
-            wrap = Memory(db, memory_subdir=memory_subdir)
-            knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
-                memory_subdir, agent.config.knowledge_subdirs or []
-            )
-            if knowledge_subdirs:
-                await wrap.preload_knowledge(log_item, knowledge_subdirs, memory_subdir)
-            return wrap
-        else:
+        with Memory._index_lock:
+            existing = Memory.index.get(memory_subdir)
+        if existing is not None:
             return Memory(
-                db=Memory.index[memory_subdir],
+                db=existing,
                 memory_subdir=memory_subdir,
             )
+        log_item = agent.context.log.log(
+            type="util",
+            heading=f"Initializing VectorDB in '/{memory_subdir}'",
+        )
+        db, created = Memory.initialize(
+            log_item,
+            agent.config.embeddings_model,
+            memory_subdir,
+            False,
+        )
+        with Memory._index_lock:
+            Memory.index[memory_subdir] = db
+        wrap = Memory(db, memory_subdir=memory_subdir)
+        knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
+            memory_subdir, agent.config.knowledge_subdirs or []
+        )
+        if knowledge_subdirs:
+            await wrap.preload_knowledge(log_item, knowledge_subdirs, memory_subdir)
+        return wrap
 
     @staticmethod
     async def get_by_subdir(
@@ -97,34 +101,36 @@ class Memory:
         log_item: LogItem | None = None,
         preload_knowledge: bool = True,
     ):
-        if not Memory.index.get(memory_subdir):
-            import initialize
+        with Memory._index_lock:
+            existing = Memory.index.get(memory_subdir)
+        if existing:
+            return Memory(db=existing, memory_subdir=memory_subdir)
+        import initialize
 
-            agent_config = initialize.initialize_agent()
-            model_config = agent_config.embeddings_model
-            db, _created = Memory.initialize(
-                log_item=log_item,
-                model_config=model_config,
-                memory_subdir=memory_subdir,
-                in_memory=False,
+        agent_config = initialize.initialize_agent()
+        model_config = agent_config.embeddings_model
+        db, _created = Memory.initialize(
+            log_item=log_item,
+            model_config=model_config,
+            memory_subdir=memory_subdir,
+            in_memory=False,
+        )
+        wrap = Memory(db, memory_subdir=memory_subdir)
+        if preload_knowledge:
+            knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
+                memory_subdir, agent_config.knowledge_subdirs or []
             )
-            wrap = Memory(db, memory_subdir=memory_subdir)
-            if preload_knowledge:
-                knowledge_subdirs = get_knowledge_subdirs_by_memory_subdir(
-                    memory_subdir, agent_config.knowledge_subdirs or []
-                )
-                if knowledge_subdirs:
-                    await wrap.preload_knowledge(
-                        log_item, knowledge_subdirs, memory_subdir
-                    )
+            if knowledge_subdirs:
+                await wrap.preload_knowledge(log_item, knowledge_subdirs, memory_subdir)
+        with Memory._index_lock:
             Memory.index[memory_subdir] = db
-        return Memory(db=Memory.index[memory_subdir], memory_subdir=memory_subdir)
+        return Memory(db=db, memory_subdir=memory_subdir)
 
     @staticmethod
     async def reload(agent: Agent):
         memory_subdir = get_agent_memory_subdir(agent)
-        if Memory.index.get(memory_subdir):
-            del Memory.index[memory_subdir]
+        with Memory._index_lock:
+            Memory.index.pop(memory_subdir, None)
         return await Memory.get(agent)
 
     @staticmethod
@@ -494,7 +500,8 @@ def get_custom_knowledge_subdir_abs(agent: Agent) -> str:
 
 def reload():
     # clear the memory index, this will force all DBs to reload
-    Memory.index = {}
+    with Memory._index_lock:
+        Memory.index.clear()
 
 
 def abs_db_dir(memory_subdir: str) -> str:

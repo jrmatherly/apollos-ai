@@ -3,6 +3,7 @@ import asyncio
 import random
 import string
 import threading
+import time
 
 import nest_asyncio
 
@@ -51,7 +52,11 @@ class AgentContextType(Enum):
 class AgentContext:
     _contexts: dict[str, "AgentContext"] = {}
     _contexts_lock = threading.RLock()
+    _context_timestamps: dict[str, float] = {}
+    MAX_CONTEXTS = 200
+    CONTEXT_TTL = 3600  # 1 hour
     _counter: int = 0
+    _counter_lock = threading.Lock()
     _notification_manager = None
 
     def __init__(
@@ -76,10 +81,13 @@ class AgentContext:
         self.id = id or AgentContext.generate_id()
         existing = None
         with AgentContext._contexts_lock:
+            AgentContext._evict_stale_locked()
             existing = AgentContext._contexts.get(self.id, None)
             if existing:
                 AgentContext._contexts.pop(self.id, None)
+                AgentContext._context_timestamps.pop(self.id, None)
             AgentContext._contexts[self.id] = self
+            AgentContext._context_timestamps[self.id] = time.monotonic()
         if existing and existing.task:
             existing.task.kill()
         if set_current:
@@ -97,8 +105,9 @@ class AgentContext:
         self.task: DeferredTask | None = None
         self.created_at = created_at or datetime.now(timezone.utc)
         self.type = type
-        AgentContext._counter += 1
-        self.no = AgentContext._counter
+        with AgentContext._counter_lock:
+            AgentContext._counter += 1
+            self.no = AgentContext._counter
         self.last_message = last_message or datetime.now(timezone.utc)
         self.user_id = user_id
         self.tenant_ctx: TenantContext | None = tenant_ctx
@@ -109,7 +118,10 @@ class AgentContext:
     @staticmethod
     def get(id: str):
         with AgentContext._contexts_lock:
-            return AgentContext._contexts.get(id, None)
+            ctx = AgentContext._contexts.get(id, None)
+            if ctx is not None:
+                AgentContext._context_timestamps[id] = time.monotonic()
+            return ctx
 
     @staticmethod
     def use(id: str):
@@ -183,9 +195,43 @@ class AgentContext:
     def remove(id: str):
         with AgentContext._contexts_lock:
             context = AgentContext._contexts.pop(id, None)
+            AgentContext._context_timestamps.pop(id, None)
         if context and context.task:
             context.task.kill()
         return context
+
+    @classmethod
+    def _evict_stale_locked(cls):
+        """Remove contexts older than CONTEXT_TTL. Must be called while holding _contexts_lock."""
+        now = time.monotonic()
+        stale_ids = [
+            cid
+            for cid, ts in cls._context_timestamps.items()
+            if (now - ts) > cls.CONTEXT_TTL
+            and not (cls._contexts.get(cid) and cls._contexts[cid].is_running())
+        ]
+        for cid in stale_ids:
+            ctx = cls._contexts.pop(cid, None)
+            cls._context_timestamps.pop(cid, None)
+            if ctx and ctx.task:
+                ctx.task.kill()
+
+        # If still over MAX_CONTEXTS, evict oldest non-running contexts
+        if len(cls._contexts) > cls.MAX_CONTEXTS:
+            sorted_ids = sorted(
+                cls._context_timestamps.keys(),
+                key=lambda k: cls._context_timestamps[k],
+            )
+            for cid in sorted_ids:
+                if len(cls._contexts) <= cls.MAX_CONTEXTS:
+                    break
+                ctx = cls._contexts.get(cid)
+                if ctx and ctx.is_running():
+                    continue  # skip running contexts
+                cls._contexts.pop(cid, None)
+                cls._context_timestamps.pop(cid, None)
+                if ctx and ctx.task:
+                    ctx.task.kill()
 
     def get_data(self, key: str, recursive: bool = True):
         # recursive is not used now, prepared for context hierarchy
