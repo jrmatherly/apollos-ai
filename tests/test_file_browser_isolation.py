@@ -130,6 +130,84 @@ class TestFileBrowserConfinement:
 
 
 # ---------------------------------------------------------------------------
+# 1b. TenantContext Path Segment Validation (CWE-22 / CodeQL py/path-injection)
+# ---------------------------------------------------------------------------
+class TestTenantContextPathValidation:
+    """Regression tests for CWE-22 defense-in-depth in TenantContext."""
+
+    def test_valid_uuid_user_id(self):
+        """Standard UUID user_id is accepted."""
+        ctx = TenantContext(user_id="550e8400-e29b-41d4-a716-446655440000")
+        assert ctx.user_id == "550e8400-e29b-41d4-a716-446655440000"
+
+    def test_valid_email_style_user_id(self):
+        """Email-style user_id (Entra OID or similar) is accepted."""
+        ctx = TenantContext(user_id="user@example.com")
+        assert ctx.user_id == "user@example.com"
+
+    def test_valid_alphanumeric_ids(self):
+        """Alphanumeric IDs with allowed special chars are accepted."""
+        ctx = TenantContext(user_id="user_123", org_id="org-456", team_id="team.789")
+        assert ctx.user_id == "user_123"
+        assert ctx.org_id == "org-456"
+        assert ctx.team_id == "team.789"
+
+    def test_path_traversal_user_id_rejected(self):
+        """user_id containing '../' is rejected."""
+        with pytest.raises(ValueError, match="path traversal"):
+            TenantContext(user_id="../../etc")
+
+    def test_slash_in_user_id_rejected(self):
+        """user_id containing '/' is rejected."""
+        with pytest.raises(ValueError, match="path separators"):
+            TenantContext(user_id="user/admin")
+
+    def test_backslash_in_user_id_rejected(self):
+        """user_id containing '\\' is rejected."""
+        with pytest.raises(ValueError, match="path separators"):
+            TenantContext(user_id="user\\admin")
+
+    def test_null_byte_in_user_id_rejected(self):
+        """user_id containing null byte is rejected."""
+        with pytest.raises(ValueError, match="null bytes"):
+            TenantContext(user_id="user\x00evil")
+
+    def test_empty_user_id_rejected(self):
+        """Empty user_id is rejected."""
+        with pytest.raises(ValueError, match="must not be empty"):
+            TenantContext(user_id="")
+
+    def test_path_traversal_org_id_rejected(self):
+        """org_id containing '../' is rejected."""
+        with pytest.raises(ValueError, match="path traversal"):
+            TenantContext(user_id="valid", org_id="../escape")
+
+    def test_path_traversal_team_id_rejected(self):
+        """team_id containing '../' is rejected."""
+        with pytest.raises(ValueError, match="path traversal"):
+            TenantContext(user_id="valid", team_id="../escape")
+
+    def test_from_session_user_with_malicious_id(self):
+        """from_session_user rejects session data with path traversal."""
+        with pytest.raises(ValueError, match="path traversal"):
+            TenantContext.from_session_user({"id": "../../etc/passwd"})
+
+    def test_from_session_user_valid(self):
+        """from_session_user accepts normal session data."""
+        ctx = TenantContext.from_session_user(
+            {"id": "user123", "email": "user@test.com"}
+        )
+        assert ctx.user_id == "user123"
+
+    def test_system_context_always_valid(self):
+        """System context uses hardcoded safe values."""
+        ctx = TenantContext.system()
+        assert ctx.user_id == "system"
+        assert ctx.org_id == "default"
+        assert ctx.team_id == "default"
+
+
+# ---------------------------------------------------------------------------
 # 2. Baseline Overlay
 # ---------------------------------------------------------------------------
 class TestBaselineOverlay:
@@ -271,6 +349,117 @@ class TestVirtualPathRouting:
         assert base_dir == str(tmp_path / "sh")
         assert sub == ""
         assert readonly is False
+
+    def test_leading_slash_stripped_from_normal_path(self, tmp_path):
+        """resolve_virtual_path strips leading / from normal paths."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "/my-file.txt",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == str(tmp_path / "ws")
+        assert sub == "my-file.txt"
+        assert readonly is False
+
+    def test_empty_path_resolves_to_workspace_root(self, tmp_path):
+        """resolve_virtual_path handles empty string as workspace root."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == str(tmp_path / "ws")
+        assert sub == ""
+        assert readonly is False
+
+
+# ---------------------------------------------------------------------------
+# 3b. Workspace Root Operations (regression for PR #9 bugs)
+# ---------------------------------------------------------------------------
+class TestWorkspaceRootOperations:
+    """Regression tests for file operations at workspace root (currentPath='')."""
+
+    def test_create_folder_at_workspace_root(self, tmp_path):
+        """Create folder with empty parent_path succeeds (workspace root)."""
+        browser = FileBrowser(base_dir=str(tmp_path))
+        result = browser.create_folder("", "new-folder")
+        assert result is True
+        assert (tmp_path / "new-folder").is_dir()
+
+    def test_create_file_at_workspace_root(self, tmp_path):
+        """Save text file with bare filename works at workspace root."""
+        browser = FileBrowser(base_dir=str(tmp_path))
+        result = browser.save_text_file("test-file.txt", "hello world")
+        assert result is True
+        assert (tmp_path / "test-file.txt").read_text() == "hello world"
+
+    def test_rename_file_at_workspace_root(self, tmp_path):
+        """Rename file using relative path (no leading /) works."""
+        (tmp_path / "original.txt").write_text("content")
+        browser = FileBrowser(base_dir=str(tmp_path))
+        result = browser.rename_item("original.txt", "renamed.txt")
+        assert result is True
+        assert not (tmp_path / "original.txt").exists()
+        assert (tmp_path / "renamed.txt").read_text() == "content"
+
+    def test_delete_file_at_workspace_root(self, tmp_path):
+        """Delete file using relative path (no leading /) works."""
+        (tmp_path / "to-delete.txt").write_text("content")
+        browser = FileBrowser(base_dir=str(tmp_path))
+        result = browser.delete_file("to-delete.txt")
+        assert result is True
+        assert not (tmp_path / "to-delete.txt").exists()
+
+    def test_leading_slash_path_does_not_escape_workspace(self, tmp_path):
+        """Path with leading / should NOT escape workspace via pathlib."""
+        browser = FileBrowser(base_dir=str(tmp_path))
+        # After resolve_virtual_path strips the "/", this should work
+        result = browser.save_text_file("test.txt", "content")
+        assert result is True
+        assert (tmp_path / "test.txt").exists()
+
+    def test_resolve_then_create_folder_integration(self, tmp_path):
+        """Full flow: resolve empty path then create folder."""
+        workspace = str(tmp_path / "ws")
+        baseline = str(tmp_path / "bl")
+        shared = str(tmp_path / "sh")
+        resolved_dir, resolved_parent, _readonly = resolve_virtual_path(
+            "", workspace, baseline, shared
+        )
+        browser = FileBrowser(base_dir=resolved_dir)
+        result = browser.create_folder(resolved_parent, "my-folder")
+        assert result is True
+        assert (tmp_path / "ws" / "my-folder").is_dir()
+
+    def test_resolve_then_save_file_integration(self, tmp_path):
+        """Full flow: resolve path with leading / then save file."""
+        workspace = str(tmp_path / "ws")
+        baseline = str(tmp_path / "bl")
+        shared = str(tmp_path / "sh")
+        # Simulates frontend sending "/filename" when currentPath is empty
+        resolved_dir, resolved_path, _readonly = resolve_virtual_path(
+            "/new-file.txt", workspace, baseline, shared
+        )
+        browser = FileBrowser(base_dir=resolved_dir)
+        result = browser.save_text_file(resolved_path, "file content")
+        assert result is True
+        assert (tmp_path / "ws" / "new-file.txt").read_text() == "file content"
+
+    def test_resolve_then_rename_integration(self, tmp_path):
+        """Full flow: resolve relative filename then rename."""
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        (workspace / "old-name.txt").write_text("data")
+
+        resolved_dir, resolved_path, _readonly = resolve_virtual_path(
+            "old-name.txt", str(workspace), str(tmp_path / "bl"), str(tmp_path / "sh")
+        )
+        browser = FileBrowser(base_dir=resolved_dir)
+        result = browser.rename_item(resolved_path, "new-name.txt")
+        assert result is True
+        assert (workspace / "new-name.txt").read_text() == "data"
 
 
 # ---------------------------------------------------------------------------

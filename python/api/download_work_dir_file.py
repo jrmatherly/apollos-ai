@@ -104,8 +104,6 @@ class DownloadFile(ApiHandler):
         file_path = request.args.get("path", input.get("path", ""))
         if not file_path:
             raise ValueError("No file path provided")
-        if not file_path.startswith("/"):
-            file_path = f"/{file_path}"
 
         file = await runtime.call_development_function(
             file_info.get_file_info, file_path, workspace

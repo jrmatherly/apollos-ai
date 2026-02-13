@@ -43,7 +43,7 @@ def resolve_virtual_path(
     elif current_path == "$SHARED":
         return shared_dir, "", False
     else:
-        return workspace, current_path, False
+        return workspace, current_path.lstrip("/"), False
 
 
 def is_admin_user(tenant_ctx: TenantContext) -> bool:

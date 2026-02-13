@@ -31,7 +31,7 @@ class RenameWorkDirFile(ApiHandler):
 
             if action == "create-folder":
                 parent_path = input.get("parentPath", current_path)
-                if not parent_path:
+                if parent_path is None:
                     return {"error": "Parent path is required"}
 
                 if parent_path.startswith("$BASELINE"):
@@ -56,8 +56,6 @@ class RenameWorkDirFile(ApiHandler):
                 resolved_dir, resolved_path, _readonly = resolve_virtual_path(
                     file_path, workspace, baseline_dir, shared_dir
                 )
-                if not resolved_path.startswith("/"):
-                    resolved_path = f"/{resolved_path}"
                 res = await runtime.call_development_function(
                     rename_item, resolved_path, new_name, resolved_dir
                 )

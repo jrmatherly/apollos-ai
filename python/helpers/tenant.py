@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 
 from python.helpers import files
@@ -8,6 +9,32 @@ from python.helpers import files
 SYSTEM_USER_ID = "system"
 DEFAULT_ORG_ID = "default"
 DEFAULT_TEAM_ID = "default"
+
+# Allow alphanumeric, hyphens, underscores, dots, and @ (for email-style IDs).
+# Rejects path separators, .., null bytes, and control characters.
+_SAFE_ID_RE = re.compile(r"^[a-zA-Z0-9._@-]+$")
+
+
+def _validate_path_segment(value: str, field_name: str) -> str:
+    """Validate that a tenant ID is safe for use in filesystem paths.
+
+    Raises ValueError if the value contains path traversal characters,
+    separators, null bytes, or other unsafe patterns (CWE-22 defense).
+    """
+    if not value:
+        raise ValueError(f"{field_name} must not be empty")
+    if "\x00" in value:
+        raise ValueError(f"{field_name} contains null bytes")
+    if ".." in value:
+        raise ValueError(f"{field_name} contains path traversal sequence '..'")
+    if "/" in value or "\\" in value:
+        raise ValueError(f"{field_name} contains path separators")
+    if not _SAFE_ID_RE.match(value):
+        raise ValueError(
+            f"{field_name} contains invalid characters "
+            f"(allowed: alphanumeric, '.', '_', '@', '-')"
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -25,6 +52,12 @@ class TenantContext:
     user_id: str
     org_id: str = DEFAULT_ORG_ID
     team_id: str = DEFAULT_TEAM_ID
+
+    def __post_init__(self) -> None:
+        """Validate all ID fields are safe for filesystem path construction."""
+        _validate_path_segment(self.user_id, "user_id")
+        _validate_path_segment(self.org_id, "org_id")
+        _validate_path_segment(self.team_id, "team_id")
 
     # -- Factory methods -------------------------------------------------------
 

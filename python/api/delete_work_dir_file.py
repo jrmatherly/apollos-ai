@@ -33,8 +33,6 @@ class DeleteWorkDirFile(ApiHandler):
             resolved_dir, resolved_path, _readonly = resolve_virtual_path(
                 file_path, workspace, baseline_dir, shared_dir
             )
-            if not resolved_path.startswith("/"):
-                resolved_path = f"/{resolved_path}"
 
             res = await runtime.call_development_function(
                 delete_file, resolved_path, resolved_dir

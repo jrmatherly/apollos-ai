@@ -46,8 +46,6 @@ class EditWorkDirFile(ApiHandler):
                 resolved_dir, resolved_path, _readonly = resolve_virtual_path(
                     file_path, workspace, baseline_dir, shared_dir
                 )
-                if not resolved_path.startswith("/"):
-                    resolved_path = f"/{resolved_path}"
 
                 data = await runtime.call_development_function(
                     load_file, resolved_path, resolved_dir
@@ -64,8 +62,6 @@ class EditWorkDirFile(ApiHandler):
             resolved_dir, resolved_path, _readonly = resolve_virtual_path(
                 file_path, workspace, baseline_dir, shared_dir
             )
-            if not resolved_path.startswith("/"):
-                resolved_path = f"/{resolved_path}"
 
             content = input.get("content", "")
             if not isinstance(content, str):
