@@ -77,8 +77,8 @@ UPLOAD_LIMIT_BYTES = 5 * 1024 * 1024 * 1024
 # with larger non-file fields. Raise it to match our intended upload limit.
 WerkzeugRequest.max_form_memory_size = UPLOAD_LIMIT_BYTES
 
+webapp.json.sort_keys = False
 webapp.config.update(
-    JSON_SORT_KEYS=False,
     SESSION_COOKIE_NAME="session_"
     + runtime.get_runtime_id(),  # bind the session cookie name to runtime id to prevent session collision on same host
     SESSION_COOKIE_SAMESITE="Lax",  # Lax required for OIDC redirect-back

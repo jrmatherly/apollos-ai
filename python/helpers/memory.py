@@ -5,16 +5,13 @@ import os
 import threading
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Sequence
+from typing import Any
 
 import faiss
 import numpy as np
 from langchain.embeddings import CacheBackedEmbeddings
 from langchain.storage import InMemoryByteStore, LocalFileStore
 from langchain_community.docstore.in_memory import InMemoryDocstore
-
-# from langchain_chroma import Chroma
-from langchain_community.vectorstores import FAISS
 from langchain_community.vectorstores.utils import (
     DistanceStrategy,
 )
@@ -31,6 +28,7 @@ from python.helpers import (  # noqa: F401 — faiss_monkey_patch is a side-effe
     guids,
     knowledge_import,
 )
+from python.helpers.faiss_wrapper import MyFaiss
 from python.helpers.log import LogItem
 from python.helpers.print_style import PrintStyle
 
@@ -38,23 +36,6 @@ from . import files
 
 # Raise the log level so WARNING messages aren't shown
 logging.getLogger("langchain_core.vectorstores.base").setLevel(logging.ERROR)
-
-
-class MyFaiss(FAISS):
-    # override aget_by_ids
-    def get_by_ids(self, ids: Sequence[str], /) -> List[Document]:
-        # return all self.docstore._dict[id] in ids
-        return [
-            self.docstore._dict[id]
-            for id in (ids if isinstance(ids, list) else [ids])
-            if id in self.docstore._dict
-        ]  # type: ignore
-
-    async def aget_by_ids(self, ids: Sequence[str], /) -> List[Document]:
-        return self.get_by_ids(ids)
-
-    def get_all_docs(self):
-        return self.docstore._dict  # type: ignore
 
 
 class Memory:
