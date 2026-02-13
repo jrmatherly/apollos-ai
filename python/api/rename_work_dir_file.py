@@ -2,7 +2,12 @@ from python.api import get_work_dir_files
 from python.helpers import runtime
 from python.helpers.api import ApiHandler, Input, Output, Request
 from python.helpers.file_browser import FileBrowser
-from python.helpers.workspace import get_workspace_root
+from python.helpers.workspace import (
+    get_baseline_root,
+    get_team_shared_root,
+    get_workspace_root,
+    resolve_virtual_path,
+)
 
 
 class RenameWorkDirFile(ApiHandler):
@@ -14,6 +19,8 @@ class RenameWorkDirFile(ApiHandler):
         try:
             tenant_ctx = self._get_tenant_ctx()
             workspace = get_workspace_root(tenant_ctx)
+            baseline_dir = get_baseline_root()
+            shared_dir = get_team_shared_root(tenant_ctx)
 
             action = input.get("action", "rename")
             new_name = (input.get("newName", "") or "").strip()
@@ -26,17 +33,33 @@ class RenameWorkDirFile(ApiHandler):
                 parent_path = input.get("parentPath", current_path)
                 if not parent_path:
                     return {"error": "Parent path is required"}
+
+                if parent_path.startswith("$BASELINE"):
+                    return {"error": "Baseline files are read-only"}
+
+                resolved_dir, resolved_parent, _readonly = resolve_virtual_path(
+                    parent_path, workspace, baseline_dir, shared_dir
+                )
                 res = await runtime.call_development_function(
-                    create_folder, parent_path, new_name, workspace
+                    create_folder, resolved_parent, new_name, resolved_dir
                 )
             else:
                 file_path = input.get("path", "")
                 if not file_path:
                     return {"error": "Path is required"}
-                if not file_path.startswith("/"):
-                    file_path = f"/{file_path}"
+
+                if file_path.startswith("$BASELINE") or current_path.startswith(
+                    "$BASELINE"
+                ):
+                    return {"error": "Baseline files are read-only"}
+
+                resolved_dir, resolved_path, _readonly = resolve_virtual_path(
+                    file_path, workspace, baseline_dir, shared_dir
+                )
+                if not resolved_path.startswith("/"):
+                    resolved_path = f"/{resolved_path}"
                 res = await runtime.call_development_function(
-                    rename_item, file_path, new_name, workspace
+                    rename_item, resolved_path, new_name, resolved_dir
                 )
 
             if res:

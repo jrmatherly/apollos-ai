@@ -420,6 +420,55 @@ class FileBrowser:
             PrintStyle.error(f"Error reading directory: {e}")
             return {"entries": [], "current_path": "", "parent_path": ""}
 
+    def get_files_merged(
+        self,
+        current_path: str,
+        baseline_dir: str | None = None,
+        shared_dir: str | None = None,
+    ) -> dict:
+        """Get files from user workspace + baseline overlay + team shared."""
+        result = self.get_files(current_path)
+
+        # At workspace root, inject baseline and shared directory entries
+        if not current_path and baseline_dir:
+            baseline_path = Path(baseline_dir)
+            if baseline_path.is_dir():
+                for entry in sorted(baseline_path.iterdir()):
+                    if entry.name.startswith("."):
+                        continue
+                    result["entries"].insert(
+                        0,
+                        {
+                            "name": entry.name,
+                            "path": f"$BASELINE/{entry.name}",
+                            "type": "folder"
+                            if entry.is_dir()
+                            else self._get_file_type(entry.name),
+                            "size": entry.stat().st_size if entry.is_file() else 0,
+                            "is_dir": entry.is_dir(),
+                            "is_baseline": True,
+                            "readonly": True,
+                        },
+                    )
+
+        if not current_path and shared_dir:
+            shared_path = Path(shared_dir)
+            if shared_path.is_dir():
+                result["entries"].insert(
+                    0,
+                    {
+                        "name": "shared",
+                        "path": "$SHARED/",
+                        "type": "folder",
+                        "size": 0,
+                        "is_dir": True,
+                        "is_shared": True,
+                        "readonly": False,
+                    },
+                )
+
+        return result
+
     def get_full_path(self, file_path: str, allow_dir: bool = False) -> str:
         """Get full file path if it exists and is within base_dir"""
         full_path = files.get_abs_path(self.base_dir, file_path)
