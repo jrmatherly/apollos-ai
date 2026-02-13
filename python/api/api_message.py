@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import threading
 from datetime import datetime, timedelta
@@ -127,7 +128,9 @@ class ApiMessage(ApiHandler):
                         f"Failed to activate project '{project_name}' for context '{context_id}': {error_msg}"
                     )
                     return Response(
-                        f'{{"error": "Failed to activate project \\"{project_name}\\""}}',
+                        json.dumps(
+                            {"error": f'Failed to activate project "{project_name}"'}
+                        ),
                         status=500,
                         mimetype="application/json",
                     )
@@ -141,7 +144,9 @@ class ApiMessage(ApiHandler):
                         f"Failed to activate project '{project_name}': {str(e)}"
                     )
                     return Response(
-                        f'{{"error": "Failed to activate project \\"{project_name}\\""}}',
+                        json.dumps(
+                            {"error": f'Failed to activate project "{project_name}"'}
+                        ),
                         status=400,
                         mimetype="application/json",
                     )
@@ -195,7 +200,7 @@ class ApiMessage(ApiHandler):
                 str(e) if runtime.is_development() else "Internal server error"
             )
             return Response(
-                f'{{"error": "{error_detail}"}}',
+                json.dumps({"error": error_detail}),
                 status=500,
                 mimetype="application/json",
             )

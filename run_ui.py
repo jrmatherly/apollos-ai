@@ -443,10 +443,33 @@ async def mcp_oauth_callback():
         )
 
     try:
+        import hashlib
+        import hmac as _hmac
         import json as _json
 
+        # Verify HMAC integrity of state parameter
+        if "." not in state:
+            return _mcp_oauth_popup_response(
+                success=False,
+                message="Invalid state parameter format.",
+            )
+        payload, received_sig = state.rsplit(".", 1)
+        secret_key = (
+            webapp.secret_key.encode()
+            if isinstance(webapp.secret_key, str)
+            else webapp.secret_key
+        )
+        expected_sig = _hmac.new(
+            secret_key, payload.encode(), hashlib.sha256
+        ).hexdigest()
+        if not _hmac.compare_digest(received_sig, expected_sig):
+            return _mcp_oauth_popup_response(
+                success=False,
+                message="State parameter integrity check failed.",
+            )
+
         # Decode state to find user_id and service_id
-        state_data = _json.loads(base64.b64decode(state).decode())
+        state_data = _json.loads(base64.b64decode(payload).decode())
         user_id = state_data.get("user_id")
         service_id = state_data.get("service_id")
 
