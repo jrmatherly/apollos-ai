@@ -71,6 +71,8 @@ const model = {
 		this.isLoading = false;
 		this.history = [];
 		this.initialPath = "";
+		this.browser.currentPath = "";
+		this.browser.parentPath = "";
 		this.browser.entries = [];
 		this.openDropdownPath = null;
 		this.resetRenameState();
@@ -85,6 +87,10 @@ const model = {
 	displayPath() {
 		const raw = this.browser.currentPath || "";
 		if (!raw || raw === "/" || raw === "$WORK_DIR") return "My Workspace";
+		if (raw.startsWith("$PROJECTS/")) {
+			const sub = raw.slice("$PROJECTS/".length);
+			return sub || "Projects";
+		}
 		return raw;
 	},
 
@@ -256,7 +262,8 @@ const model = {
 	},
 
 	async navigateToFolder(path) {
-		if (!path.startsWith("/")) path = `/${path}`;
+		// Virtual paths ($PROJECTS/, $BASELINE/, $SHARED/) must not get a leading /
+		if (!path.startsWith("$") && !path.startsWith("/")) path = `/${path}`;
 		if (this.browser.currentPath !== path)
 			this.history.push(this.browser.currentPath);
 		await this.fetchFiles(path);

@@ -4,6 +4,7 @@ from python.helpers import files
 from python.helpers.tenant import TenantContext
 
 BASELINE_DIR = "usr/baseline"
+PROJECTS_DIR = "usr/projects"
 
 
 def get_workspace_root(tenant_ctx: TenantContext) -> str:
@@ -16,6 +17,11 @@ def get_workspace_root(tenant_ctx: TenantContext) -> str:
 def get_baseline_root() -> str:
     """Resolve absolute path to admin-managed baseline directory."""
     return files.get_abs_path(BASELINE_DIR)
+
+
+def get_projects_root() -> str:
+    """Resolve absolute path to projects directory."""
+    return files.get_abs_path(PROJECTS_DIR)
 
 
 def get_team_shared_root(tenant_ctx: TenantContext) -> str:
@@ -32,7 +38,12 @@ def resolve_virtual_path(
 
     Returns (resolved_base_dir, relative_sub_path, is_readonly).
     """
-    if current_path.startswith("$BASELINE/"):
+    if current_path.startswith("$PROJECTS/"):
+        sub_path = current_path[len("$PROJECTS/") :]
+        return get_projects_root(), sub_path, False
+    elif current_path == "$PROJECTS":
+        return get_projects_root(), "", False
+    elif current_path.startswith("$BASELINE/"):
         sub_path = current_path[len("$BASELINE/") :]
         return baseline_dir, sub_path, True
     elif current_path == "$BASELINE":
