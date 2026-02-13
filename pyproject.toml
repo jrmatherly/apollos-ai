@@ -92,3 +92,4 @@ override-dependencies = ["openai==1.99.5"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = ["."]
