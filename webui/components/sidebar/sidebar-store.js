@@ -2,160 +2,163 @@ import { createStore } from "/js/AlpineStore.js";
 
 // This store manages the visibility and state of the main sidebar panel.
 const model = {
-  isOpen: true,
-  _initialized: false,
+	isOpen: true,
+	_initialized: false,
 
-  // Hover-expand sidebar state
-  _isHovered: false,
-  _isPinned: true, // Default pinned (backwards-compatible with existing 250px behavior)
+	// Hover-expand sidebar state
+	_isHovered: false,
+	_isPinned: true, // Default pinned (backwards-compatible with existing 250px behavior)
 
-  get isExpanded() {
-    return this._isHovered || this._isPinned;
-  },
+	get isExpanded() {
+		return this._isHovered || this._isPinned;
+	},
 
-  // Centralized collapse state for all sidebar sections (persisted in localStorage)
-  sectionStates: {
-    tasks: false,       // default: collapsed
-    preferences: false  // default: collapsed
-  },
+	// Centralized collapse state for all sidebar sections (persisted in localStorage)
+	sectionStates: {
+		tasks: false, // default: collapsed
+		preferences: false, // default: collapsed
+	},
 
-  // Initialize the store by setting up a resize listener
-  // Guard ensures this runs only once, even if called from multiple components
-  init() {
-    if (this._initialized) return;
-    this._initialized = true;
+	// Initialize the store by setting up a resize listener
+	// Guard ensures this runs only once, even if called from multiple components
+	init() {
+		if (this._initialized) return;
+		this._initialized = true;
 
-    this.loadPinState();
-    this.loadSectionStates();
-    this.handleResize();
-    this.resizeHandler = () => this.handleResize();
-    window.addEventListener("resize", this.resizeHandler);
-  },
+		this.loadPinState();
+		this.loadSectionStates();
+		this.handleResize();
+		this.resizeHandler = () => this.handleResize();
+		window.addEventListener("resize", this.resizeHandler);
+	},
 
-  // Load section collapse states from localStorage
-  loadSectionStates() {
-    try {
-      const stored = localStorage.getItem('sidebarSections');
-      if (stored) {
-        this.sectionStates = { ...this.sectionStates, ...JSON.parse(stored) };
-      }
-    } catch (e) {
-      console.error('Failed to load sidebar section states', e);
-    }
-  },
+	// Load section collapse states from localStorage
+	loadSectionStates() {
+		try {
+			const stored = localStorage.getItem("sidebarSections");
+			if (stored) {
+				this.sectionStates = { ...this.sectionStates, ...JSON.parse(stored) };
+			}
+		} catch (e) {
+			console.error("Failed to load sidebar section states", e);
+		}
+	},
 
-  // Persist section states to localStorage
-  persistSectionStates() {
-    try {
-      localStorage.setItem('sidebarSections', JSON.stringify(this.sectionStates));
-    } catch (e) {
-      console.error('Failed to persist section states', e);
-    }
-  },
+	// Persist section states to localStorage
+	persistSectionStates() {
+		try {
+			localStorage.setItem(
+				"sidebarSections",
+				JSON.stringify(this.sectionStates),
+			);
+		} catch (e) {
+			console.error("Failed to persist section states", e);
+		}
+	},
 
-  // Check if a section should be open (used by x-init in templates)
-  isSectionOpen(name) {
-    return this.sectionStates[name] === true;
-  },
+	// Check if a section should be open (used by x-init in templates)
+	isSectionOpen(name) {
+		return this.sectionStates[name] === true;
+	},
 
-  // Toggle and persist a section's open state (drives Bootstrap programmatically via components)
-  toggleSection(name) {
-    if (!(name in this.sectionStates)) return;
-    this.sectionStates[name] = !this.sectionStates[name];
-    this.persistSectionStates();
-  },
+	// Toggle and persist a section's open state (drives Bootstrap programmatically via components)
+	toggleSection(name) {
+		if (!(name in this.sectionStates)) return;
+		this.sectionStates[name] = !this.sectionStates[name];
+		this.persistSectionStates();
+	},
 
-  // Load pin state from localStorage
-  loadPinState() {
-    try {
-      const stored = localStorage.getItem('sidebarPinned');
-      if (stored !== null) {
-        this._isPinned = JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error('Failed to load sidebar pin state', e);
-    }
-  },
+	// Load pin state from localStorage
+	loadPinState() {
+		try {
+			const stored = localStorage.getItem("sidebarPinned");
+			if (stored !== null) {
+				this._isPinned = JSON.parse(stored);
+			}
+		} catch (e) {
+			console.error("Failed to load sidebar pin state", e);
+		}
+	},
 
-  // Toggle pin state and persist
-  togglePin() {
-    this._isPinned = !this._isPinned;
-    try {
-      localStorage.setItem('sidebarPinned', JSON.stringify(this._isPinned));
-    } catch (e) {
-      console.error('Failed to persist sidebar pin state', e);
-    }
-  },
+	// Toggle pin state and persist
+	togglePin() {
+		this._isPinned = !this._isPinned;
+		try {
+			localStorage.setItem("sidebarPinned", JSON.stringify(this._isPinned));
+		} catch (e) {
+			console.error("Failed to persist sidebar pin state", e);
+		}
+	},
 
-  // Hover handlers (desktop only)
-  onMouseEnter() {
-    if (!this.isMobile()) {
-      this._isHovered = true;
-    }
-  },
+	// Hover handlers (desktop only)
+	onMouseEnter() {
+		if (!this.isMobile()) {
+			this._isHovered = true;
+		}
+	},
 
-  onMouseLeave() {
-    if (!this.isMobile()) {
-      this._isHovered = false;
-    }
-  },
+	onMouseLeave() {
+		if (!this.isMobile()) {
+			this._isHovered = false;
+		}
+	},
 
-  // Keyboard accessibility: expand on focus-within
-  onFocusIn() {
-    if (!this.isMobile()) {
-      this._isHovered = true;
-    }
-  },
+	// Keyboard accessibility: expand on focus-within
+	onFocusIn() {
+		if (!this.isMobile()) {
+			this._isHovered = true;
+		}
+	},
 
-  onFocusOut(event, panelEl) {
-    if (!this.isMobile() && panelEl && !panelEl.contains(event.relatedTarget)) {
-      this._isHovered = false;
-    }
-  },
+	onFocusOut(event, panelEl) {
+		if (!this.isMobile() && panelEl && !panelEl.contains(event.relatedTarget)) {
+			this._isHovered = false;
+		}
+	},
 
-  // Cleanup method for lifecycle management
-  destroy() {
-    if (this.resizeHandler) {
-      window.removeEventListener("resize", this.resizeHandler);
-      this.resizeHandler = null;
-    }
-    this._initialized = false;
-  },
+	// Cleanup method for lifecycle management
+	destroy() {
+		if (this.resizeHandler) {
+			window.removeEventListener("resize", this.resizeHandler);
+			this.resizeHandler = null;
+		}
+		this._initialized = false;
+	},
 
-  // Toggle the sidebar's visibility
-  toggle() {
-    this.isOpen = !this.isOpen;
-  },
+	// Toggle the sidebar's visibility
+	toggle() {
+		this.isOpen = !this.isOpen;
+	},
 
-  // Close the sidebar, e.g., on overlay click on mobile
-  close() {
-    if (this.isMobile()) {
-      this.isOpen = false;
-    }
-  },
+	// Close the sidebar, e.g., on overlay click on mobile
+	close() {
+		if (this.isMobile()) {
+			this.isOpen = false;
+		}
+	},
 
-  // Handle browser resize to show/hide sidebar based on viewport width
-  handleResize() {
-    this.isOpen = !this.isMobile();
-  },
+	// Handle browser resize to show/hide sidebar based on viewport width
+	handleResize() {
+		this.isOpen = !this.isMobile();
+	},
 
-  // Check if the current viewport is mobile
-  isMobile() {
-    return window.innerWidth <= 768;
-  },
+	// Check if the current viewport is mobile
+	isMobile() {
+		return window.innerWidth <= 768;
+	},
 
-  // Dropdown positioning for quick-actions (fixed position to escape overflow:hidden)
-  dropdownStyle: {},
+	// Dropdown positioning for quick-actions (fixed position to escape overflow:hidden)
+	dropdownStyle: {},
 
-  updateDropdownPosition(triggerElement) {
-    if (!triggerElement) return;
-    const rect = triggerElement.getBoundingClientRect();
-    this.dropdownStyle = {
-      top: `${rect.bottom + 8}px`,
-      left: `${rect.left}px`,
-      width: `${rect.width}px`
-    };
-  },
+	updateDropdownPosition(triggerElement) {
+		if (!triggerElement) return;
+		const rect = triggerElement.getBoundingClientRect();
+		this.dropdownStyle = {
+			top: `${rect.bottom + 8}px`,
+			left: `${rect.left}px`,
+			width: `${rect.width}px`,
+		};
+	},
 };
 
 export const store = createStore("sidebar", model);

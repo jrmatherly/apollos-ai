@@ -8,6 +8,36 @@ from python.helpers.workspace import (
     resolve_virtual_path,
 )
 
+_VIRTUAL_PREFIXES = ("$PROJECTS/", "$BASELINE/", "$SHARED/")
+
+
+def _get_virtual_prefix(path: str) -> str:
+    """Extract the virtual prefix from a path, if any."""
+    for pfx in _VIRTUAL_PREFIXES:
+        if path.startswith(pfx) or path == pfx.rstrip("/"):
+            return pfx
+    return ""
+
+
+def _prefix_response_paths(result: dict, prefix: str) -> dict:
+    """Re-prefix response paths so the frontend preserves virtual context."""
+    cp = result.get("current_path", "")
+    if cp:
+        result["current_path"] = prefix + cp
+
+    pp = result.get("parent_path", "")
+    if pp and pp != ".":
+        result["parent_path"] = prefix + pp
+    elif pp == ".":
+        # At virtual root — parent is workspace root
+        result["parent_path"] = ""
+
+    for entry in result.get("entries", []):
+        if entry.get("path"):
+            entry["path"] = prefix + entry["path"]
+
+    return result
+
 
 class GetWorkDirFiles(ApiHandler):
     @classmethod
@@ -35,6 +65,9 @@ class GetWorkDirFiles(ApiHandler):
             )
             return {"data": result}
 
+        # Detect virtual prefix for re-prefixing response paths
+        prefix = _get_virtual_prefix(current_path)
+
         # Route virtual path prefixes to the correct directory
         resolved_dir, sub_path, _readonly = resolve_virtual_path(
             current_path, workspace, baseline_dir, shared_dir
@@ -43,6 +76,10 @@ class GetWorkDirFiles(ApiHandler):
         result = await runtime.call_development_function(
             get_files, sub_path, resolved_dir
         )
+
+        # Re-prefix paths so frontend preserves virtual context during navigation
+        if prefix:
+            result = _prefix_response_paths(result, prefix)
 
         return {"data": result}
 

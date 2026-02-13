@@ -2,7 +2,6 @@ import { store as chatInputStore } from "/components/chat/input/input-store.js";
 import { store as memoryStore } from "/components/modals/memory/memory-dashboard-store.js";
 import { store as projectsStore } from "/components/projects/projects-store.js";
 import { store as chatsStore } from "/components/sidebar/chats/chats-store.js";
-import { getContext } from "/index.js";
 import { createStore } from "/js/AlpineStore.js";
 import * as API from "/js/api.js";
 

@@ -1,11 +1,11 @@
+import {
+	NotificationPriority,
+	NotificationType,
+	store as notificationStore,
+} from "/components/notifications/notification-store.js";
 import { store as chatsStore } from "/components/sidebar/chats/chats-store.js";
 import { callJsonApi } from "/js/api.js";
 import * as modals from "/js/modals.js";
-import {
-  NotificationType,
-  NotificationPriority,
-  store as notificationStore,
-} from "/components/notifications/notification-store.js";
 
 // shortcuts utils for convenience
 
@@ -15,22 +15,22 @@ export { callJsonApi };
 // notifications
 export { NotificationType, NotificationPriority };
 export const frontendNotification =
-  notificationStore.frontendNotification.bind(notificationStore);
+	notificationStore.frontendNotification.bind(notificationStore);
 
 // chat context
 export function getCurrentContextId() {
-  return chatsStore.getSelectedChatId();
+	return chatsStore.getSelectedChatId();
 }
 
-export function getCurrentContext(){
-  return chatsStore.getSelectedContext();
+export function getCurrentContext() {
+	return chatsStore.getSelectedContext();
 }
 
 // modals
 export function openModal(modalPath) {
-  return modals.openModal(modalPath);
+	return modals.openModal(modalPath);
 }
 
 export function closeModal(modalPath = null) {
-  return modals.closeModal(modalPath);
+	return modals.closeModal(modalPath);
 }

@@ -231,6 +231,14 @@ class TestUploadExtensionValidation:
 class TestFileBrowserExtensionValidation:
     """FileBrowser._is_allowed_file must also validate extensions."""
 
+    @pytest.fixture(autouse=True)
+    def _fake_project_root(self, tmp_path, monkeypatch):
+        """Allow FileBrowser to accept tmp_path as valid project root."""
+        monkeypatch.setattr(
+            "python.helpers.file_browser.files.get_base_dir",
+            lambda: str(tmp_path),
+        )
+
     @pytest.fixture()
     def browser(self, tmp_path):
         from python.helpers.file_browser import FileBrowser

@@ -16,9 +16,24 @@ from python.helpers.file_browser import FileBrowser
 from python.helpers.files import get_confined_abs_path
 from python.helpers.tenant import TenantContext
 from python.helpers.workspace import (
+    get_projects_root,
     get_workspace_root,
     resolve_virtual_path,
 )
+
+
+@pytest.fixture(autouse=True)
+def _fake_project_root(tmp_path, monkeypatch):
+    """Make FileBrowser.__init__ accept tmp_path as a valid project root.
+
+    The project-root confinement check in FileBrowser compares base_dir
+    against files.get_base_dir().  In tests, base_dir is always under
+    tmp_path, so we point get_base_dir() at tmp_path.
+    """
+    monkeypatch.setattr(
+        "python.helpers.file_browser.files.get_base_dir",
+        lambda: str(tmp_path),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -519,3 +534,171 @@ class TestConfinedAbsPath:
         (subdir / "deep.txt").write_text("deep")
         result = get_confined_abs_path("a/b/c/deep.txt", str(tmp_path))
         assert result == str((tmp_path / "a" / "b" / "c" / "deep.txt").resolve())
+
+
+# ---------------------------------------------------------------------------
+# 5. $PROJECTS/ Virtual Path Routing
+# ---------------------------------------------------------------------------
+class TestProjectsVirtualPath:
+    """Tests for $PROJECTS/ virtual path resolution."""
+
+    def test_projects_path_resolves_to_projects_dir(self, tmp_path):
+        """resolve_virtual_path routes $PROJECTS/name to projects directory."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "$PROJECTS/my_project",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == get_projects_root()
+        assert sub == "my_project"
+        assert readonly is False
+
+    def test_projects_subpath_resolves(self, tmp_path):
+        """resolve_virtual_path routes $PROJECTS/name/sub/dir correctly."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "$PROJECTS/my_project/.a0proj/instructions",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == get_projects_root()
+        assert sub == "my_project/.a0proj/instructions"
+        assert readonly is False
+
+    def test_bare_projects_path(self, tmp_path):
+        """resolve_virtual_path handles bare $PROJECTS (no trailing slash)."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "$PROJECTS",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == get_projects_root()
+        assert sub == ""
+        assert readonly is False
+
+    def test_projects_does_not_affect_baseline(self, tmp_path):
+        """$BASELINE/ routing still works after adding $PROJECTS/."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "$BASELINE/knowledge",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == str(tmp_path / "bl")
+        assert sub == "knowledge"
+        assert readonly is True
+
+    def test_projects_does_not_affect_shared(self, tmp_path):
+        """$SHARED/ routing still works after adding $PROJECTS/."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "$SHARED/docs",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == str(tmp_path / "sh")
+        assert sub == "docs"
+        assert readonly is False
+
+    def test_projects_does_not_affect_normal_paths(self, tmp_path):
+        """Normal paths still resolve to workspace."""
+        base_dir, sub, readonly = resolve_virtual_path(
+            "my-file.txt",
+            str(tmp_path / "ws"),
+            str(tmp_path / "bl"),
+            str(tmp_path / "sh"),
+        )
+        assert base_dir == str(tmp_path / "ws")
+        assert sub == "my-file.txt"
+        assert readonly is False
+
+
+# ---------------------------------------------------------------------------
+# 6. Response Path Prefixing Helpers
+# ---------------------------------------------------------------------------
+class TestResponsePathPrefixing:
+    """Tests for _get_virtual_prefix() and _prefix_response_paths()."""
+
+    def test_get_virtual_prefix_projects(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("$PROJECTS/my_project") == "$PROJECTS/"
+
+    def test_get_virtual_prefix_baseline(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("$BASELINE/knowledge") == "$BASELINE/"
+
+    def test_get_virtual_prefix_shared(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("$SHARED/docs") == "$SHARED/"
+
+    def test_get_virtual_prefix_bare_projects(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("$PROJECTS") == "$PROJECTS/"
+
+    def test_get_virtual_prefix_normal_path(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("my-file.txt") == ""
+
+    def test_get_virtual_prefix_empty(self):
+        from python.api.get_work_dir_files import _get_virtual_prefix
+
+        assert _get_virtual_prefix("") == ""
+
+    def test_prefix_response_paths_current_and_parent(self):
+        from python.api.get_work_dir_files import _prefix_response_paths
+
+        result = {
+            "current_path": "my_project/subdir",
+            "parent_path": "my_project",
+            "entries": [
+                {"name": "file.txt", "path": "my_project/subdir/file.txt"},
+            ],
+        }
+        prefixed = _prefix_response_paths(result, "$PROJECTS/")
+        assert prefixed["current_path"] == "$PROJECTS/my_project/subdir"
+        assert prefixed["parent_path"] == "$PROJECTS/my_project"
+        assert prefixed["entries"][0]["path"] == "$PROJECTS/my_project/subdir/file.txt"
+
+    def test_prefix_response_paths_dot_parent(self):
+        """parent_path '.' at virtual root becomes '' (workspace root)."""
+        from python.api.get_work_dir_files import _prefix_response_paths
+
+        result = {
+            "current_path": "my_project",
+            "parent_path": ".",
+            "entries": [],
+        }
+        prefixed = _prefix_response_paths(result, "$PROJECTS/")
+        assert prefixed["parent_path"] == ""
+
+    def test_prefix_response_paths_empty_parent(self):
+        """Empty parent_path stays empty."""
+        from python.api.get_work_dir_files import _prefix_response_paths
+
+        result = {
+            "current_path": "my_project",
+            "parent_path": "",
+            "entries": [],
+        }
+        prefixed = _prefix_response_paths(result, "$PROJECTS/")
+        assert prefixed["parent_path"] == ""
+
+    def test_prefix_response_paths_no_entries(self):
+        """Works with empty entries list."""
+        from python.api.get_work_dir_files import _prefix_response_paths
+
+        result = {
+            "current_path": "knowledge",
+            "parent_path": "",
+            "entries": [],
+        }
+        prefixed = _prefix_response_paths(result, "$BASELINE/")
+        assert prefixed["current_path"] == "$BASELINE/knowledge"
+        assert prefixed["entries"] == []
