@@ -110,7 +110,7 @@ A typical interaction flow within Apollos AI might look like this:
 Tools are functionalities that agents can leverage. These can include anything from web search and code execution to interacting with APIs or controlling external software. Apollos AI provides a mechanism for defining and integrating both built-in and custom tools.
 
 #### Built-in Tools
-Apollos AI comes with 19 active built-in tools designed to help agents perform tasks efficiently:
+Apollos AI comes with 20 active built-in tools designed to help agents perform tasks efficiently:
 
 | Tool | Function |
 | --- | --- |
@@ -123,6 +123,7 @@ Apollos AI comes with 19 active built-in tools designed to help agents perform t
 | input | Allows agents to use the keyboard to interact with an active shell |
 | memory_delete | Permanently deletes specific memories from the vector database |
 | memory_forget | Removes memories matching a query from the vector database |
+| mcp_discover | Discovers MCP servers and searches tools across the gateway |
 | memory_load | Retrieves relevant memories from the vector database |
 | memory_save | Stores information in the vector database for later retrieval |
 | notify_user | Sends notifications to the user via the notification system |
