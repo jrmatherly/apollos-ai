@@ -203,59 +203,22 @@ change — source code edits rebuild in seconds.
 
 ### Pushing to GHCR (GitHub Container Registry)
 
-Images are hosted on GHCR at `ghcr.io/jrmatherly/apollos-ai` and `ghcr.io/jrmatherly/apollos-ai-base`.
+Images are hosted on GHCR at `ghcr.io/jrmatherly/apollos-ai` and `ghcr.io/jrmatherly/apollos-ai-base`. All images are built for **linux/amd64 only**.
 
-**1. Create a GitHub Personal Access Token (PAT)**
+CI handles image pushes automatically (release.yml for app, docker-base.yml for base). For manual pushes:
 
-Go to **GitHub > Settings > Developer settings > Personal access tokens > Tokens (classic)** and create a token with `write:packages` and `read:packages` scopes.
-
-**2. Authenticate to GHCR**
+**1. Authenticate to GHCR**
 
 ```bash
 export GITHUB_TOKEN="ghp_YOUR_TOKEN_HERE"
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u jrmatherly --password-stdin
 ```
 
-**3. Create a multi-platform builder** (one-time setup)
-
-The default Docker builder doesn't support multi-platform builds. Create a builder that uses the `docker-container` driver with host networking (required for reliable package downloads during build):
+**2. Build and push**
 
 ```bash
-docker buildx create --name multiarch --driver docker-container \
-  --driver-opt network=host --use
+mise run docker:push:base    # Push base image
+mise run docker:push:app     # Push app image (main branch)
 ```
 
-> To skip multi-platform and build only for your local architecture, omit the `--platform` flag from the build commands below.
-
-> **Troubleshooting — "Multi-platform build is not supported":** The default `docker` driver doesn't support `--platform`. Create the `docker-container` builder shown above.
->
-> **Troubleshooting — "Could not connect to mirror...connection timed out":** Two possible causes:
->
-> 1. **BuildKit networking:** The builder can't reach the internet. Recreate with host networking:
->
->    ```bash
->    docker buildx rm multiarch
->    docker buildx create --name multiarch --driver docker-container \
->      --driver-opt network=host --use
->    ```
->
-> 2. **Flaky Kali mirror:** The default `http.kali.org` redirector sometimes routes to unreliable mirrors. The base Dockerfile pins the [Cloudflare-backed `kali.download` mirror](https://www.kali.org/docs/community/kali-linux-mirrors/) for reliability. If you still see mirror timeouts, retry the build — the specific mirror may be temporarily down.
-
-**4. Build and push the base image** (from `docker/base/`):
-
-```bash
-docker buildx build -t ghcr.io/jrmatherly/apollos-ai-base:latest \
-  --platform linux/amd64,linux/arm64 --push \
-  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-```
-
-**5. Build and push the app image** (from `docker/run/`):
-
-```bash
-docker buildx build -t ghcr.io/jrmatherly/apollos-ai:latest \
-  --platform linux/amd64,linux/arm64 --push \
-  --build-arg BRANCH=main \
-  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-```
-
-See `docker/base/build.txt` and `docker/run/build.txt` for additional build variants (development, testing, no-cache).
+> **Troubleshooting — "Could not connect to mirror...connection timed out":** The base Dockerfile pins the [Cloudflare-backed `kali.download` mirror](https://www.kali.org/docs/community/kali-linux-mirrors/) for reliability. If you still see mirror timeouts, retry the build — the specific mirror may be temporarily down.

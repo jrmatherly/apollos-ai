@@ -1,52 +1,40 @@
+# App image build reference (amd64)
+#
+# Prefer mise tasks — they handle platform flags, branch args, and tagging:
+#   mise run docker:build:local          # Build from working tree
+#   mise run docker:build:app            # Build from main branch
+#   mise run docker:build:app testing    # Build from a specific branch
+#   mise run docker:push:app             # Build + push to GHCR
+#
+# CI: .github/workflows/release.yml builds on v* tag push.
 
-# LOCAL BUILDS
-# Prefer mise tasks: mise run docker:build:local
-# Run these commands from the project root folder
+# LOCAL BUILDS (from project root):
 
-# local development image based on local files (layer-cached deps)
+# Local image from working tree (layer-cached deps):
 docker build -f DockerfileLocal -t apollos-ai-local --platform linux/amd64 .
 
-# local development image based on local files without cache
+# Local image from working tree without cache:
 docker build -f DockerfileLocal -t apollos-ai-local --platform linux/amd64 --no-cache .
 
+# GIT-BASED BUILDS (from docker/run/):
 
-# GIT BASED BUILDS
-# Run these commands from the /docker/run directory
+# Build from a specific branch:
+docker build -t apollos-ai-development \
+  --platform linux/amd64 \
+  --build-arg BRANCH=development \
+  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
 
-# local image based on development branch instead of local files
-docker build -t apollos-ai-development --build-arg BRANCH=development --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
+docker build -t apollos-ai-main \
+  --platform linux/amd64 \
+  --build-arg BRANCH=main \
+  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
 
-# local image based on testing branch instead of local files
-docker build -t apollos-ai-testing --build-arg BRANCH=testing --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
+# GHCR PUSH (authenticate first: docker login ghcr.io):
+docker buildx build \
+  -t ghcr.io/jrmatherly/apollos-ai:latest \
+  --platform linux/amd64 --push \
+  --build-arg BRANCH=main \
+  --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
 
-# local image based on main branch instead of local files
-docker build -t apollos-ai-main --build-arg BRANCH=main --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-
-
-
-# GHCR PUSH
-# Run these commands from the /docker/run directory
-
-# 1. Authenticate (requires a GitHub PAT with write:packages scope)
-export GITHUB_TOKEN="ghp_YOUR_TOKEN_HERE"
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u jrmatherly --password-stdin
-
-# 2. Create multi-platform builder (one-time setup)
-#    --driver-opt network=host is required so BuildKit can reach package mirrors
-docker buildx create --name multiarch --driver docker-container --driver-opt network=host --use
-# If builds fail with network timeouts, recreate: docker buildx rm multiarch && run the above again
-
-# 3. Push images (omit --platform to build for local arch only)
-
-# development:
-docker buildx build -t ghcr.io/jrmatherly/apollos-ai:development --platform linux/amd64,linux/arm64 --push --build-arg BRANCH=development --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-
-# testing:
-docker buildx build -t ghcr.io/jrmatherly/apollos-ai:testing --platform linux/amd64,linux/arm64 --push --build-arg BRANCH=testing --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-
-# main
-docker buildx build -t ghcr.io/jrmatherly/apollos-ai:vx.x.x -t ghcr.io/jrmatherly/apollos-ai:latest --platform linux/amd64,linux/arm64 --push --build-arg BRANCH=main --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) .
-
-
-# plain output
---progress=plain
+# Verbose output:
+# Append --progress=plain to any build command above.
