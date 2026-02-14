@@ -18,7 +18,7 @@ dependencies = [
     "exchangelib>=5.4.3",
     "faiss-cpu==1.11.0",
     "fasta2a>=0.5.0",
-    "fastmcp>=3.0.0rc1,<4.0",
+    "fastmcp>=3.0.0rc2,<4.0",
     "flaredantic>=0.1.5",
     "flask[async]>=3.0.3",
     "GitPython>=3.1.43",

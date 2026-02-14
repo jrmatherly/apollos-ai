@@ -313,7 +313,7 @@ requires-dist = [
     { name = "exchangelib", specifier = ">=5.4.3" },
     { name = "faiss-cpu", specifier = "==1.11.0" },
     { name = "fasta2a", specifier = ">=0.5.0" },
-    { name = "fastmcp", specifier = ">=3.0.0rc1,<4.0" },
+    { name = "fastmcp", specifier = ">=3.0.0rc2,<4.0" },
     { name = "flaredantic", specifier = ">=0.1.5" },
     { name = "flask", extras = ["async"], specifier = ">=3.0.3" },
     { name = "flask-cors", specifier = ">=6.0.2" },
@@ -1402,7 +1402,7 @@ wheels = [
 
 [[package]]
 name = "fastmcp"
-version = "3.0.0rc1"
+version = "3.0.0rc2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -1426,9 +1426,9 @@ dependencies = [
     { name = "watchfiles" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4b/f7/d3a51c4ce70683975b6f9c25df28057610e7eab6916941e1a74d9eb3bc15/fastmcp-3.0.0rc1.tar.gz", hash = "sha256:26202810a7b844e392c2a6e09a8b5ff7a4735e4a4e75db89b52813a5bf2b5b4f", size = 14258063, upload-time = "2026-02-12T22:42:37.229Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/3a/afa90e3646b754d52cd8a436490ffed38bc9fd0d605f479d04de38af1dee/fastmcp-3.0.0rc2.tar.gz", hash = "sha256:81cc408b13a0ab2e7701abaa04c8a64597e13bb2fec2a7fc92fd324e08855ef2", size = 14258553, upload-time = "2026-02-14T03:57:09.199Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/b9/2e9ab2afc9093889a01f7b56c4b3083ffa4b43c30f473bad32c4180332c5/fastmcp-3.0.0rc1-py3-none-any.whl", hash = "sha256:5b9aae094917081e63f3881fb5e2073a3d6d84beff2f2aabcb16277618154430", size = 601102, upload-time = "2026-02-12T22:42:39.574Z" },
+    { url = "https://files.pythonhosted.org/packages/56/7b/556317e567956fb6108f981d63a48be69e5e0014ae745f4feb3f50a1da4e/fastmcp-3.0.0rc2-py3-none-any.whl", hash = "sha256:0596b372c4b6b193f02619a874dca3550b153b085827e82133ccfef2bb687a3d", size = 601390, upload-time = "2026-02-14T03:57:07.277Z" },
 ]
 
 [[package]]

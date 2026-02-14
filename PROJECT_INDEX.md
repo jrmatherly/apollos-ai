@@ -1,6 +1,6 @@
 # Project Index: Apollos AI
 
-Generated: 2026-02-12
+Generated: 2026-02-14
 
 ## Project Overview
 
@@ -27,7 +27,7 @@ apollos-ai/
 ├── run_tunnel.py         # Cloudflare tunnel management
 ├── pyproject.toml        # Dependencies & project config (uv)
 ├── uv.lock               # Reproducible dependency lockfile
-├── mise.toml             # Task runner + tool manager (70+ tasks)
+├── mise.toml             # Task runner + tool manager (93 tasks)
 ├── hk.pkl                # Git hooks config (pre-commit, commit-msg)
 ├── cliff.toml            # Changelog generation (conventional commits)
 ├── biome.json            # CSS/JS linter config
@@ -41,23 +41,23 @@ apollos-ai/
 │   ├── audit/            # Quality audit snapshots
 │   ├── dna/              # Codebase DNA profiles
 │   └── error-handling/   # Error topology analysis
-├── .github/workflows/    # CI/CD (7 workflows)
+├── .github/workflows/    # CI/CD (9 workflows)
 ├── python/
-│   ├── api/              # 82 REST endpoint handlers (ApiHandler)
+│   ├── api/              # 85 REST endpoint handlers (ApiHandler)
 │   ├── tools/            # 19 active tools (Tool subclasses)
-│   ├── helpers/          # 92 utility modules
-│   ├── extensions/       # 39 lifecycle hook extensions (24 hook dirs)
+│   ├── helpers/          # 103 utility modules
+│   ├── extensions/       # 41 lifecycle hook extensions (24 hook dirs)
 │   └── websocket_handlers/  # 4 namespace-based WS handlers
-├── prompts/              # 107 prompt templates (104 .md + 3 .py)
+├── prompts/              # 102 prompt templates (99 .md + 3 .py)
 ├── webui/                # Frontend (Alpine.js + Socket.IO)
-│   ├── components/       # 92 HTML component templates
+│   ├── components/       # 100 HTML component templates
 │   ├── js/               # 21 JS modules
-│   ├── css/              # 10 stylesheets
+│   ├── css/              # 11 stylesheets
 │   └── vendor/           # Ace editor, Alpine.js, Socket.IO, etc.
 ├── agents/               # 6 agent profiles (default, apollos, developer, hacker, researcher, _example)
 ├── skills/               # Skill definitions (create-skill template)
 ├── knowledge/            # Knowledge base (main + solutions)
-├── tests/                # 30 test files (pytest + pytest-asyncio)
+├── tests/                # 49 test files (pytest + pytest-asyncio)
 ├── docker/               # Docker build (base + run stages)
 ├── docs/                 # Documentation (setup, guides, developer, reference)
 ├── conf/                 # Runtime config (model_providers, rbac_model, gitignores)
@@ -122,22 +122,23 @@ apollos-ai/
 | `wait` | Pause execution |
 | `unknown` | Fallback for unrecognized tool calls |
 
-## API Handlers (82 endpoints)
+## API Handlers (85 endpoints)
 
 Key endpoint groups:
 
-- **Chat**: `message`, `message_async`, `chat_create`, `chat_load`, `chat_reset`, `chat_remove`, `chat_export`
+- **Chat**: `message`, `message_async`, `chat_create`, `chat_load`, `chat_reset`, `chat_remove`, `chat_export`, `chat_files_path_get`
 - **Settings**: `settings_get`, `settings_set`, `settings_workdir_file_structure`
 - **Memory**: `memory_dashboard`
 - **Files**: `get_work_dir_files`, `upload_work_dir_files`, `edit_work_dir_file`, `delete_work_dir_file`, `download_work_dir_file`, `rename_work_dir_file`, `file_info`
-- **MCP**: `mcp_servers_status`, `mcp_servers_apply`, `mcp_server_get_detail`, `mcp_server_get_log`
+- **MCP**: `mcp_servers_status`, `mcp_servers_apply`, `mcp_server_get_detail`, `mcp_server_get_log`, `mcp_connections`, `mcp_oauth_start`, `mcp_services`
+- **Admin**: `admin_users`, `admin_api_keys`, `admin_group_mappings`, `admin_orgs`, `admin_teams`
 - **Scheduler**: `scheduler_tasks_list`, `scheduler_task_create`, `scheduler_task_update`, `scheduler_task_delete`, `scheduler_task_run`, `scheduler_tick`
 - **Backup**: `backup_create`, `backup_restore`, `backup_inspect`, `backup_test`, `backup_preview_grouped`, `backup_restore_preview`, `backup_get_defaults`
 - **Knowledge**: `knowledge_reindex`, `knowledge_path_get`, `import_knowledge`
 - **Skills**: `skills`, `skills_import`, `skills_import_preview`
 - **Notifications**: `notification_create`, `notifications_history`, `notifications_mark_read`, `notifications_clear`
-- **Auth**: `csrf_token`, `logout`
-- **System**: `health`, `poll`, `restart`, `nudge`, `pause`, `rfc`, `banners`, `agents`, `subagents`, `projects`
+- **Auth**: `csrf_token`, `logout`, `user_profile`
+- **System**: `health`, `poll`, `restart`, `nudge`, `pause`, `rfc`, `banners`, `agents`, `subagents`, `projects`, `switch_context`
 - **Media**: `synthesize`, `transcribe`, `image_get`
 - **Tunnel**: `tunnel`, `tunnel_proxy`
 - **Upload**: `upload`, `upload_work_dir_files`
@@ -146,7 +147,7 @@ Key endpoint groups:
 - **Branding**: `branding_get`
 - **API Compat**: `api_message`, `api_reset_chat`, `api_terminate_chat`, `api_files_get`, `api_log_get`
 
-## Extension Lifecycle Hooks (24 directories, 39 extensions)
+## Extension Lifecycle Hooks (24 directories, 41 extensions)
 
 ```text
 agent_init (2) → message_loop_start (1) → message_loop_prompts_before (1) →
@@ -191,16 +192,16 @@ User overrides: `usr/extensions/` (same filename = override).
 | user_message_ui | `_10_update_check` |
 | util_model_call_before | `_10_mask_secrets` |
 
-## Helpers (92 modules)
+## Helpers (103 modules)
 
 ### Authentication & Security
-`auth.py`, `auth_bootstrap.py`, `auth_db.py`, `rbac.py`, `security.py`, `user_store.py`, `vault_crypto.py`, `crypto.py`, `secrets.py`, `login.py`
+`auth.py`, `auth_bootstrap.py`, `auth_db.py`, `rbac.py`, `security.py`, `user_store.py`, `vault_crypto.py`, `crypto.py`, `secrets.py`, `login.py`, `login_protection.py`, `audit.py`
 
 ### Data & Storage
-`backup.py`, `files.py`, `file_browser.py`, `file_tree.py`, `history.py`, `memory.py`, `memory_consolidation.py`, `multiuser_migration.py`, `persist_chat.py`, `vector_db.py`, `state_snapshot.py`
+`backup.py`, `files.py`, `file_browser.py`, `file_tree.py`, `history.py`, `memory.py`, `memory_consolidation.py`, `multiuser_migration.py`, `persist_chat.py`, `vector_db.py`, `vector_store.py`, `state_snapshot.py`, `workspace.py`
 
 ### Agent System Core
-`call_llm.py`, `context.py`, `defer.py`, `extension.py`, `extract_tools.py`, `job_loop.py`, `messages.py`, `projects.py`, `runtime.py`, `settings.py`, `subagents.py`, `tenant.py`, `tool.py`, `tokens.py`, `wait.py`
+`api.py`, `call_llm.py`, `context.py`, `defer.py`, `error_response.py`, `extension.py`, `extract_tools.py`, `job_loop.py`, `messages.py`, `projects.py`, `runtime.py`, `settings.py`, `subagents.py`, `tenant.py`, `tool.py`, `tokens.py`, `wait.py`
 
 ### Browser & Automation
 `browser.py`, `browser_use.py`, `browser_use_monkeypatch.py`, `playwright.py`, `docker.py`, `process.py`
@@ -211,11 +212,14 @@ User overrides: `usr/extensions/` (same filename = override).
 ### Search & Knowledge
 `document_query.py`, `duckduckgo_search.py`, `knowledge_import.py`, `perplexity_search.py`, `searxng.py`, `rfc.py`, `rfc_exchange.py`, `rfc_files.py`
 
+### MCP Gateway
+`mcp_handler.py`, `mcp_server.py`, `mcp_connection_pool.py`, `mcp_container_manager.py`, `mcp_identity.py`, `mcp_oauth.py`, `mcp_resource_store.py`
+
 ### Skills & Tasks
-`skills.py`, `skills_cli.py`, `skills_import.py`, `task_scheduler.py`, `mcp_handler.py`, `mcp_server.py`, `message_queue.py`
+`skills.py`, `skills_cli.py`, `skills_import.py`, `task_scheduler.py`, `message_queue.py`
 
 ### Utilities
-`attachment_manager.py`, `branding.py`, `dirty_json.py`, `dotenv.py`, `errors.py`, `faiss_monkey_patch.py`, `git.py`, `guids.py`, `images.py`, `localization.py`, `log.py`, `migration.py`, `providers.py`, `rate_limiter.py`, `shell_local.py`, `shell_ssh.py`, `strings.py`, `update_check.py`
+`attachment_manager.py`, `branding.py`, `dirty_json.py`, `dotenv.py`, `errors.py`, `faiss_monkey_patch.py`, `faiss_wrapper.py`, `git.py`, `guids.py`, `images.py`, `localization.py`, `log.py`, `migration.py`, `providers.py`, `rate_limiter.py`, `shell_local.py`, `shell_ssh.py`, `strings.py`, `update_check.py`
 
 ### State Management
 `state_monitor.py`, `state_monitor_integration.py`, `state_snapshot.py`
@@ -257,7 +261,20 @@ User overrides: `usr/extensions/` (same filename = override).
 - **RBAC module**: `python/helpers/rbac.py`
 - **Tests**: `tests/test_phase3_authorization.py`
 
-## Prompt Templates (107 files)
+## MCP Gateway
+
+Built-in MCP gateway for routing, lifecycle, and access control:
+
+- **Connection Pool**: `mcp_connection_pool.py` — persistent MCP sessions with health checking
+- **Resource Store**: `mcp_resource_store.py` — pluggable backend (InMemory), creator+admin+role permissions
+- **Identity Headers**: `mcp_identity.py` — X-Mcp-UserId/UserName/Roles injection, auth header stripping
+- **Container Manager**: `mcp_container_manager.py` — Docker lifecycle for MCP server containers
+- **OAuth**: `mcp_oauth.py` — MCP OAuth integration (Azure provider)
+- **Proxy**: `DynamicMcpProxy` in `mcp_server.py` — ASGI reverse proxy at `/mcp`, routes SSE/HTTP/OAuth
+- **Permission Model**: Resource-level RBAC per MCP server (creator + admin + required_roles)
+- **Tests**: 5 test files (`test_mcp_connection_pool`, `test_mcp_container_manager`, `test_mcp_gateway_api`, `test_mcp_identity`, `test_mcp_resource_store`)
+
+## Prompt Templates (102 files)
 
 ### Agent System Prompts (42)
 - **Core**: `agent.system.main.md` and sub-templates (role, environment, communication, solving, tips)
@@ -294,7 +311,7 @@ User overrides: `usr/extensions/` (same filename = override).
 - `pyproject.toml` — All Python dependencies + project metadata (managed by uv)
 - `uv.lock` — Reproducible lockfile (committed)
 - `requirements.txt` — Auto-generated by `uv export` for Docker compatibility
-- `mise.toml` — Task runner (70+ tasks) + tool management
+- `mise.toml` — Task runner (93 tasks) + tool management
 - `hk.pkl` — Git hooks config (Pkl format)
 - `cliff.toml` — Changelog generation (conventional commits)
 - `biome.json` — Biome CSS/JS linter settings
@@ -324,7 +341,7 @@ Registry: `ghcr.io/jrmatherly/apollos-ai` (app), `ghcr.io/jrmatherly/apollos-ai-
 ## Development Tooling
 
 ### mise (Task Runner + Tool Manager)
-- `mise.toml` — 70+ tasks, manages Python 3.12, uv, ruff, biome, git-cliff, pkl, hk
+- `mise.toml` — 93 tasks, manages Python 3.12, uv, ruff, biome, git-cliff, pkl, hk
 - Common: `mise run r` (UI), `mise run t` (tests), `mise run lint`, `mise run ci`
 - Drift: 38 `drift:*` tasks (scan, patterns, memory, quality gates)
 - Deps: `mise run deps:add <pkg>` (adds + regenerates requirements.txt)
@@ -343,57 +360,82 @@ Registry: `ghcr.io/jrmatherly/apollos-ai` (app), `ghcr.io/jrmatherly/apollos-ai-
 - Installed via npm (`driftdetect@0.9.48`), supports Python via tree-sitter
 - Key: `mise run drift:scan`, `drift:py`, `drift:memory`, `drift:check`, `drift:gate`
 
-## CI/CD (7 GitHub Actions Workflows)
+## CI/CD (9 GitHub Actions Workflows)
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
 | `ci.yml` | Push/PR to main | Lint (Ruff + Biome) + format check + test (parallel) |
+| `claude.yml` | Issue/PR comments, assigned issues | Claude Code agent for automated responses |
+| `claude-code-review.yml` | PR open/sync/ready | Claude Code automated PR review |
 | `release.yml` | `v*` tag push | git-cliff changelog + GitHub release + Docker app image |
 | `docker-base.yml` | `docker/base/**` changes | Build + push Docker base image to GHCR |
-| `drift.yml` | Source changes / weekly | DriftDetect codebase analysis |
+| `drift.yml` | Manual dispatch | DriftDetect codebase analysis (disabled) |
 | `hooks-check.yml` | PRs to main | hk hook validation |
 | `codeql.yml` | Push/PR to main + weekly | CodeQL security analysis (Python) |
 | `dependency-review.yml` | PRs | Dependency vulnerability + requirements.txt sync |
 
 Additional: Dependabot (weekly uv + GitHub Actions + Docker updates), issue templates (YAML forms), PR template.
 
-## Tests (30 files)
+## Tests (49 files)
 
-### Authentication & Security (8)
+### Authentication & Security (14)
 - `test_auth_phase0.py` — Phase 0 foundation (26 tests)
 - `test_auth_phase1.py` — Phase 1 OIDC + local login (37 tests)
 - `test_phase2_user_isolation.py` — Phase 2 tenant isolation
 - `test_phase3_authorization.py` — Phase 3 RBAC (24 tests)
+- `test_phase4a_admin.py` — Phase 4 admin endpoints
+- `test_phase4b_mcp_client.py` — Phase 4 MCP client auth
+- `test_phase5_audit.py` — Phase 5 audit logging
+- `test_phase5_cross_tenant.py` — Phase 5 cross-tenant isolation
+- `test_phase5_login_protection.py` — Phase 5 brute force protection
+- `test_phase5_mcp_auth.py` — Phase 5 MCP authentication
 - `test_security.py` — General security
+- `test_security_boundaries.py` — Security boundary validation
 - `test_http_auth_csrf.py` — HTTP auth + CSRF
 - `test_websocket_csrf.py` — WebSocket CSRF
-- `test_websocket_namespace_security.py` — Namespace isolation
 
-### WebSocket (8)
+### WebSocket (14)
 - `test_websocket_manager.py`, `test_websocket_handlers.py`, `test_websocket_namespaces.py`
-- `test_websocket_api_integration.py`, `test_websocket_disconnect.py`
-- `test_websocket_namespace_discovery.py`, `test_websocket_state_sync.py`
+- `test_websocket_namespaces_integration.py`, `test_websocket_namespace_discovery.py`
+- `test_websocket_namespace_security.py`, `test_websocket_root_namespace.py`
+- `test_websocket_client_api_surface.py`, `test_websocket_harness.py`
+- `test_socketio_library_semantics.py`, `test_socketio_unknown_namespace.py`
+- `test_state_sync_handler.py`, `test_state_sync_welcome_screen.py`
 - `websocket_namespace_test_utils.py` (shared utilities)
+
+### MCP Gateway (5)
+- `test_mcp_connection_pool.py` — Connection pool management
+- `test_mcp_container_manager.py` — Docker container lifecycle
+- `test_mcp_gateway_api.py` — Gateway API integration
+- `test_mcp_identity.py` — Identity header injection
+- `test_mcp_resource_store.py` — Resource store permissions
 
 ### Features (7)
 - `test_branding.py` — Branding system
 - `test_multi_tab_isolation.py` — Multi-tab state isolation
-- `test_state_monitor.py`, `test_state_sync.py`, `test_state_snapshot.py`
+- `test_state_monitor.py` — State monitoring
+- `test_snapshot_parity.py`, `test_snapshot_schema_v1.py` — State snapshots
 - `test_persist_chat_log_ids.py` — Chat persistence
-- `test_developer_sections.py` — Settings sections
+- `test_settings_developer_sections.py` — Settings sections
+
+### Agent Core (1)
+- `test_agent_core.py` — Core agent functionality
 
 ### Configuration (1)
 - `test_run_ui_config.py` — Server configuration
 
-### Utilities (4)
+### Utilities (5)
 - `chunk_parser_test.py`, `email_parser_test.py` (manual)
 - `test_fasta2a_client.py`, `test_file_tree_visualize.py`
+- `test_file_browser_isolation.py` — File browser isolation
 
-### Manual / Performance (2)
+### Manual / Performance (1)
 - `rate_limiter_manual.py`
-- `test_rate_limiter.py`
 
-Run: `mise run t` or `uv run pytest tests/ -v`
+### Shared
+- `conftest.py` — Shared test fixtures
+
+Run: `mise run t`
 
 ## Documentation
 
@@ -407,8 +449,11 @@ Run: `mise run t` or `uv run pytest tests/ -v`
 - `docs/guides/usage.md` — Usage guide
 - `docs/guides/projects.md` — Projects feature
 - `docs/guides/mcp-setup.md` — MCP setup
+- `docs/guides/mcp-server-auth.md` — MCP server authentication (OAuth, tokens)
 - `docs/guides/a2a-setup.md` — Agent-to-Agent setup
 - `docs/guides/api-integration.md` — API integration
+- `docs/guides/azure-enterprise-setup.md` — Azure Entra ID SSO configuration
+- `docs/guides/production-deployment.md` — Production deployment guide
 - `docs/guides/troubleshooting.md` — Troubleshooting
 - `docs/guides/contribution.md` — Contributing
 
@@ -435,7 +480,7 @@ Run: `mise run t` or `uv run pytest tests/ -v`
 | `langchain-core` | 0.3.49 | LLM abstractions |
 | `faiss-cpu` | 1.11.0 | Vector similarity search |
 | `sentence-transformers` | 3.0.1 | Text embeddings |
-| `fastmcp` | 2.13.1 | MCP server |
+| `fastmcp` | >=3.0.0rc2 | MCP server + gateway |
 | `fasta2a` | 0.5.0 | Agent-to-Agent protocol |
 | `browser-use` | 0.5.11 | Browser automation |
 | `playwright` | 1.52.0 | Browser control |
@@ -484,18 +529,18 @@ Run: `mise run t` or `uv run pytest tests/ -v`
 
 | Component | Count |
 |-----------|-------|
-| API handlers | 82 |
+| API handlers | 85 |
 | Tools (active) | 19 |
-| Helper modules | 92 |
-| Extension files | 39 (in 24 hook directories) |
+| Helper modules | 103 |
+| Extension files | 41 (in 24 hook directories) |
 | WebSocket handlers | 4 |
-| Prompt templates | 107 (104 .md + 3 .py) |
-| Frontend components | 92 HTML |
+| Prompt templates | 102 (99 .md + 3 .py) |
+| Frontend components | 100 HTML |
 | Frontend JS modules | 21 |
-| Frontend CSS modules | 10 |
-| Test files | 30 |
-| CI/CD workflows | 7 |
+| Frontend CSS modules | 11 |
+| Test files | 49 |
+| CI/CD workflows | 9 |
 | Agent profiles | 6 |
 | Configuration files (conf/) | 5 |
 | Root config files | 10 |
-| Documentation files | 20+ |
+| Documentation files | 24 |

@@ -240,7 +240,7 @@ faiss-cpu==1.11.0
     # via apollos-ai
 fasta2a==0.5.0
     # via apollos-ai
-fastmcp==3.0.0rc1
+fastmcp==3.0.0rc2
     # via apollos-ai
 fastuuid==0.14.0
     # via litellm

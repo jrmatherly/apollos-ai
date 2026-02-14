@@ -9,7 +9,7 @@
 		"memory": "FAISS + sentence-transformers",
 		"auth": "OIDC (Entra ID) + local Argon2id + RBAC (Casbin)",
 		"license": "MIT",
-		"generated": "2026-02-12",
+		"generated": "2026-02-14",
 		"github_remote": "jrmatherly/apollos-ai"
 	},
 	"entry_points": {
@@ -22,58 +22,60 @@
 		"prepare": "prepare.py"
 	},
 	"file_counts": {
-		"python_total": 282,
-		"api_handlers": 82,
+		"python_total": 303,
+		"api_handlers": 85,
 		"tools_active": 19,
-		"helpers": 92,
-		"extensions": 39,
+		"helpers": 103,
+		"extensions": 41,
 		"extension_hook_dirs": 24,
 		"websocket_handlers": 4,
-		"prompt_templates": 107,
-		"frontend_components": 92,
+		"prompt_templates": 102,
+		"frontend_components": 100,
 		"frontend_js": 21,
-		"frontend_css": 10,
-		"tests": 30,
-		"docs": 20,
+		"frontend_css": 11,
+		"tests": 49,
+		"docs": 24,
 		"agent_profiles": 6,
-		"ci_workflows": 7,
+		"ci_workflows": 9,
 		"conf_files": 5,
 		"root_config_files": 10,
-		"mise_tasks": 70,
+		"mise_tasks": 93,
 		"drift_patterns": 14
 	},
 	"directories": {
-		"python/api": "82 REST endpoint handlers (ApiHandler subclasses)",
+		"python/api": "85 REST endpoint handlers (ApiHandler subclasses)",
 		"python/tools": "19 active tools (Tool subclasses)",
-		"python/helpers": "92 utility modules",
-		"python/extensions": "39 extensions across 24 lifecycle hook directories",
+		"python/helpers": "103 utility modules",
+		"python/extensions": "41 extensions across 24 lifecycle hook directories",
 		"python/websocket_handlers": "4 namespace-based WebSocket handlers",
-		"prompts": "107 prompt templates (104 .md + 3 .py)",
+		"prompts": "102 prompt templates (99 .md + 3 .py)",
 		"webui": "Alpine.js frontend (components, stores, vendor libs)",
-		"webui/components": "92 HTML component templates",
+		"webui/components": "100 HTML component templates",
 		"webui/js": "21 JS modules",
-		"webui/css": "10 stylesheets",
+		"webui/css": "11 stylesheets",
 		"webui/vendor": "Third-party libs (Ace editor, Alpine, Socket.IO, KaTeX)",
 		"agents": "6 agent profile configurations",
 		"skills": "Skill definitions and templates",
 		"knowledge": "Knowledge base (main + solutions)",
-		"tests": "30 pytest test files",
+		"tests": "49 pytest test files",
 		"docker": "Docker build configuration (base + run stages)",
 		"docs": "Documentation (setup, guides, developer, reference)",
 		"conf": "Runtime config (model_providers, rbac_model, gitignore templates)",
 		"alembic": "Database migrations (SQLAlchemy + Alembic)",
 		".drift": "DriftDetect codebase analysis (patterns, indexes, views, audit)",
-		".github/workflows": "7 GitHub Actions workflows"
+		".github/workflows": "9 GitHub Actions workflows"
 	},
 	"dev_tooling": {
-		"task_runner": "mise.toml (70+ tasks)",
+		"task_runner": "mise.toml (93 tasks)",
 		"git_hooks": "hk.pkl (pre-commit: ruff+biome+security, commit-msg: conventional)",
 		"changelog": "cliff.toml (git-cliff, conventional commits)",
 		"linting": "ruff (Python) + biome (CSS/JS)",
 		"drift": "driftdetect@0.9.48 (pattern scanning, Python analysis, cortex memory)",
 		"ci_cd": {
 			"ci": ".github/workflows/ci.yml (lint + format + test, parallel)",
-			"drift": ".github/workflows/drift.yml (push/manual/weekly)",
+			"claude": ".github/workflows/claude.yml (Claude Code agent for issue/PR responses)",
+			"claude_code_review": ".github/workflows/claude-code-review.yml (Claude Code automated PR review)",
+			"drift": ".github/workflows/drift.yml (manual dispatch, DriftDetect analysis)",
 			"release": ".github/workflows/release.yml (git-cliff + gh-release + docker on v* tags)",
 			"docker_base": ".github/workflows/docker-base.yml (base image on docker/base/** changes)",
 			"hooks_check": ".github/workflows/hooks-check.yml (hk validation on PRs)",
@@ -128,7 +130,8 @@
 			"chat_load",
 			"chat_reset",
 			"chat_remove",
-			"chat_export"
+			"chat_export",
+			"chat_files_path_get"
 		],
 		"settings": [
 			"settings_get",
@@ -149,7 +152,17 @@
 			"mcp_servers_status",
 			"mcp_servers_apply",
 			"mcp_server_get_detail",
-			"mcp_server_get_log"
+			"mcp_server_get_log",
+			"mcp_connections",
+			"mcp_oauth_start",
+			"mcp_services"
+		],
+		"admin": [
+			"admin_users",
+			"admin_api_keys",
+			"admin_group_mappings",
+			"admin_orgs",
+			"admin_teams"
 		],
 		"scheduler": [
 			"scheduler_tasks_list",
@@ -180,7 +193,7 @@
 			"notifications_mark_read",
 			"notifications_clear"
 		],
-		"auth": ["csrf_token", "logout"],
+		"auth": ["csrf_token", "logout", "user_profile"],
 		"system": [
 			"health",
 			"poll",
@@ -191,7 +204,8 @@
 			"banners",
 			"agents",
 			"subagents",
-			"projects"
+			"projects",
+			"switch_context"
 		],
 		"media": ["synthesize", "transcribe", "image_get"],
 		"tunnel": ["tunnel", "tunnel_proxy"],
@@ -270,7 +284,9 @@
 			"vault_crypto",
 			"crypto",
 			"secrets",
-			"login"
+			"login",
+			"login_protection",
+			"audit"
 		],
 		"data_storage": [
 			"backup",
@@ -283,12 +299,16 @@
 			"multiuser_migration",
 			"persist_chat",
 			"vector_db",
-			"state_snapshot"
+			"vector_store",
+			"state_snapshot",
+			"workspace"
 		],
 		"agent_core": [
+			"api",
 			"call_llm",
 			"context",
 			"defer",
+			"error_response",
 			"extension",
 			"extract_tools",
 			"job_loop",
@@ -334,13 +354,20 @@
 			"rfc_exchange",
 			"rfc_files"
 		],
+		"mcp_gateway": [
+			"mcp_handler",
+			"mcp_server",
+			"mcp_connection_pool",
+			"mcp_container_manager",
+			"mcp_identity",
+			"mcp_oauth",
+			"mcp_resource_store"
+		],
 		"skills_tasks": [
 			"skills",
 			"skills_cli",
 			"skills_import",
 			"task_scheduler",
-			"mcp_handler",
-			"mcp_server",
 			"message_queue"
 		],
 		"utilities": [
@@ -350,6 +377,7 @@
 			"dotenv",
 			"errors",
 			"faiss_monkey_patch",
+			"faiss_wrapper",
 			"git",
 			"guids",
 			"images",
@@ -404,6 +432,32 @@
 			"features": ["Casbin RBAC model", "Role-based access control"]
 		}
 	},
+	"mcp_gateway": {
+		"modules": [
+			"mcp_connection_pool",
+			"mcp_container_manager",
+			"mcp_identity",
+			"mcp_oauth",
+			"mcp_resource_store"
+		],
+		"proxy": "DynamicMcpProxy in mcp_server.py",
+		"mount_path": "/mcp",
+		"features": [
+			"Persistent MCP sessions with health checking",
+			"Pluggable resource store (InMemory, extensible to Redis/Postgres)",
+			"X-Mcp-UserId/UserName/Roles identity header injection",
+			"Docker container lifecycle for MCP server containers",
+			"OAuth integration (Azure provider)",
+			"Resource-level RBAC (creator + admin + required_roles)"
+		],
+		"tests": [
+			"test_mcp_connection_pool",
+			"test_mcp_container_manager",
+			"test_mcp_gateway_api",
+			"test_mcp_identity",
+			"test_mcp_resource_store"
+		]
+	},
 	"branding": {
 		"module": "python/helpers/branding.py",
 		"api_endpoint": "/branding_get",
@@ -443,7 +497,7 @@
 			"version": "3.0.1",
 			"purpose": "Text embeddings"
 		},
-		"fastmcp": { "version": "2.13.1", "purpose": "MCP server" },
+		"fastmcp": { "version": ">=3.0.0rc1", "purpose": "MCP server + gateway" },
 		"fasta2a": { "version": "0.5.0", "purpose": "Agent-to-Agent protocol" },
 		"browser-use": { "version": "0.5.11", "purpose": "Browser automation" },
 		"playwright": { "version": "1.52.0", "purpose": "Browser control" },
@@ -474,38 +528,60 @@
 			"test_auth_phase1",
 			"test_phase2_user_isolation",
 			"test_phase3_authorization",
+			"test_phase4a_admin",
+			"test_phase4b_mcp_client",
+			"test_phase5_audit",
+			"test_phase5_cross_tenant",
+			"test_phase5_login_protection",
+			"test_phase5_mcp_auth",
 			"test_security",
+			"test_security_boundaries",
 			"test_http_auth_csrf",
-			"test_websocket_csrf",
-			"test_websocket_namespace_security"
+			"test_websocket_csrf"
 		],
 		"websocket": [
 			"test_websocket_manager",
 			"test_websocket_handlers",
 			"test_websocket_namespaces",
-			"test_websocket_api_integration",
-			"test_websocket_disconnect",
+			"test_websocket_namespaces_integration",
 			"test_websocket_namespace_discovery",
-			"test_websocket_state_sync",
+			"test_websocket_namespace_security",
+			"test_websocket_root_namespace",
+			"test_websocket_client_api_surface",
+			"test_websocket_harness",
+			"test_socketio_library_semantics",
+			"test_socketio_unknown_namespace",
+			"test_state_sync_handler",
+			"test_state_sync_welcome_screen",
 			"websocket_namespace_test_utils"
+		],
+		"mcp_gateway": [
+			"test_mcp_connection_pool",
+			"test_mcp_container_manager",
+			"test_mcp_gateway_api",
+			"test_mcp_identity",
+			"test_mcp_resource_store"
 		],
 		"features": [
 			"test_branding",
 			"test_multi_tab_isolation",
 			"test_state_monitor",
-			"test_state_sync",
-			"test_state_snapshot",
+			"test_snapshot_parity",
+			"test_snapshot_schema_v1",
 			"test_persist_chat_log_ids",
-			"test_developer_sections"
+			"test_settings_developer_sections"
 		],
+		"agent_core": ["test_agent_core"],
 		"config": ["test_run_ui_config"],
 		"utilities": [
 			"chunk_parser_test",
 			"email_parser_test",
 			"test_fasta2a_client",
-			"test_file_tree_visualize"
+			"test_file_tree_visualize",
+			"test_file_browser_isolation"
 		],
-		"manual": ["rate_limiter_manual", "test_rate_limiter"]
+		"manual": ["rate_limiter_manual"],
+		"shared": ["conftest"]
 	},
 	"conventions": {
 		"functions": "snake_case",

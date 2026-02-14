@@ -52,7 +52,7 @@ The MCP Gateway adds connection pooling, multi-server composition, Docker-based 
 - Format clean
 
 ## Dependencies
-- FastMCP 3.0.0rc1 (upgraded on main before branching)
+- FastMCP 3.0.0rc2 (upgraded from rc1; rc2 has no API breaking changes, only CLI restructure + tag filter bugfix)
 - Docker SDK (already in project)
 - No new dependencies added
 
