@@ -143,9 +143,46 @@ uv export --no-hashes --no-dev --no-emit-project -o requirements.txt
 echo "requirements.txt regenerated from pyproject.toml"
 '''
 
+[tasks."deps:remove"]
+description = "Remove a dependency (usage: mise run deps:remove <package>)"
+usage = 'arg "<package>" help="Package to remove"'
+run = '''
+uv remove "${usage_package}"
+uv export --no-hashes --no-dev --no-emit-project -o requirements.txt
+echo "Removed ${usage_package} — requirements.txt regenerated"
+'''
+
 [tasks."deps:lock"]
 description = "Update uv.lock"
 run = "uv lock"
+
+[tasks."deps:verify"]
+description = "Verify a package imports correctly (usage: mise run deps:verify <package>)"
+usage = 'arg "<package>" help="Package to verify"'
+run = 'uv run python -c "import ${usage_package}; print(\"ok\")"'
+
+# ============================================================================
+# Skills
+# ============================================================================
+
+[tasks."skills:create"]
+description = "Create a new skill (usage: mise run skills:create <name>)"
+usage = 'arg "<name>" help="Skill name"'
+run = 'uv run python -m python.helpers.skills_cli create "${usage_name}"'
+
+[tasks."skills:list"]
+description = "List all available skills"
+run = "uv run python -m python.helpers.skills_cli list"
+
+[tasks."skills:validate"]
+description = "Validate a skill (usage: mise run skills:validate <name>)"
+usage = 'arg "<name>" help="Skill name"'
+run = 'uv run python -m python.helpers.skills_cli validate "${usage_name}"'
+
+[tasks."skills:search"]
+description = "Search skills (usage: mise run skills:search <query>)"
+usage = 'arg "<query>" help="Search query"'
+run = 'uv run python -m python.helpers.skills_cli search "${usage_query}"'
 
 # ============================================================================
 # Docker
@@ -608,6 +645,10 @@ rm -f usr/secrets.env
 rm -f usr/auth_token_cache.bin
 rm -f usr/auth.db
 
+# --- 2a. Stray files in usr/ root (keep .env, .env.example, .gitkeep) ---
+echo "→ Stray files in usr/..."
+find usr -maxdepth 1 -type f ! -name '.env' ! -name '.env.example' ! -name '.gitkeep' ! -name 'settings.json' ! -name 'secrets.env' ! -name 'auth_token_cache.bin' ! -name 'auth.db' -exec rm -f {} + 2>/dev/null || true
+
 # --- 3. Chat history ---
 echo "→ Chat history..."
 find usr/chats -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
@@ -637,6 +678,34 @@ find usr/workdir -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null ||
 echo "→ User skills..."
 find usr/skills -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
 
+# --- 9a. Downloads ---
+echo "→ Downloads..."
+find usr/downloads -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9b. Email ---
+echo "→ Email..."
+find usr/email -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9c. Extensions ---
+echo "→ Extensions..."
+find usr/extensions -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9d. Global settings ---
+echo "→ Global settings..."
+find usr/global -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9e. Orgs (multi-tenant data) ---
+echo "→ Orgs..."
+find usr/orgs -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9f. Projects ---
+echo "→ Projects..."
+find usr/projects -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
+# --- 9g. Uploads ---
+echo "→ Uploads..."
+find usr/uploads -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
+
 # --- 10. Logs ---
 echo "→ Logs..."
 find logs -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
@@ -647,7 +716,7 @@ find tmp -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
 
 # --- 12. Knowledge fragments (runtime-generated, not tracked) ---
 echo "→ Knowledge fragments..."
-find knowledge/fragments -mindepth 1 -exec rm -rf {} + 2>/dev/null || true
+find usr/knowledge/fragments -mindepth 1 ! -name '.gitkeep' -exec rm -rf {} + 2>/dev/null || true
 
 # --- 13. Browser artifacts ---
 echo "→ Browser artifacts..."
