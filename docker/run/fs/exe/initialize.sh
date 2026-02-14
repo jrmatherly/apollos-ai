@@ -37,6 +37,7 @@ if [ -z "$SSH_PASS" ]; then
     else
         echo "ROOT_PASSWORD=${SSH_PASS}" > /a0/usr/.env
     fi
+    chown appuser:appuser /a0/usr/.env
     chmod 600 /a0/usr/.env
     echo "   ├─ ROOT_PASSWORD  generated and saved to .env"
 fi
