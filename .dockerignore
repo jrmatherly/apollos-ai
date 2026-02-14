@@ -1,78 +1,104 @@
 ###############################################################################
-# Project‑specific exclusions / re‑includes
+# .dockerignore — Controls what enters the Docker build context
+#
+# DockerfileLocal does `COPY ./ /git/apollos-ai`, so anything NOT excluded
+# here ends up in the image. Keep this tight for security and image size.
 ###############################################################################
 
-# Obsolete
+###############################################################################
+# Security-critical exclusions (MUST be first — never remove these)
+###############################################################################
+
+# Environment files (secrets, API keys, passwords)
+*.env
+*.env.*
+.env*
+
+# Private keys and certificates (safety net — catches stray key files anywhere)
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/*.crt
+
+# Deployment configs (contains certs dir, compose secrets, infra layout)
+deploy/
+
+# User data directory (contains .env, workdir, agent data)
+usr/*
+
+# AI agent session data
+.agent/**
+.claude/**
+
+###############################################################################
+# Build infrastructure (not needed inside the container)
+###############################################################################
+
+# Docker build files (already consumed by COPY ./docker/run/fs/ step)
+docker/base/
+docker/run/build.txt
+docker/run/docker-compose.yml
+
+# CI/CD and GitHub config
+.github/
+
+# Development tooling
+mise.toml
+mise.local.toml
+hk.pkl
+cliff.toml
+biome.json
+
+# IDE configurations
+.vscode/
+.cursor/
+.windsurf/
+.serena/
+
+# Documentation (not needed at runtime)
+docs/
+
+###############################################################################
+# Project-specific exclusions
+###############################################################################
+
+# Obsolete directories
 memory/**
 instruments/**
 knowledge/custom/**
 
-# Logs, tmp, usr
+# Logs, tmp
 logs/*
 tmp/*
-usr/*
 
-
-# Keep .gitkeep markers anywhere
-!**/.gitkeep
-
-
-###############################################################################
-# Environment / tooling
-###############################################################################
-.conda/
-.cursor/
-.windsurf/
-.venv/
-.git/
-
-###############################################################################
-# Git worktrees
-###############################################################################
-.worktrees/
-
-###############################################################################
-# Tests
-###############################################################################
+# Tests (not needed in production image)
 tests/
 /*.test.py
+.coverage
+coverage.xml
+htmlcov/
 
+# Git
+.git/
 
-###############################################################################
-# ─── LAST SECTION: universal junk / caches (MUST BE LAST) ───
-#   Put these at the *bottom* so they override any ! re‑includes above
-###############################################################################
-# OS / editor junk
-**/.DS_Store
-**/Thumbs.db
+# Git worktrees
+.worktrees/
 
-# Python caches / compiled artefacts
-**/__pycache__/
-**/*.py[cod]
-**/*.pyo
-**/*.pyd
-.ruff_cache/
-.pytest_cache/
+# Python virtual environments
+.venv/
+.conda/
 
-# Environment files anywhere
-*.env
-
-# AI Agents
-.agent/**
-.claude/**
-
-# Local Docs
+# Research and scratchpad
 .local_docs/
 .scratchpad/
 .full-review/
 SECURITY_AUDIT.md
-docs/analysis/
-deploy/docker/Caddyfile.local
 
-# Apollos AI Data
+# Apollos AI local data
 my-data/
 
-# Drift: ignore caches and temporary data
+# Drift analysis (caches and temporary data)
 .drift/lake/
 .drift/cache/
 .drift/history/
@@ -87,3 +113,37 @@ my-data/
 .drift/contracts/mismatch/
 .drift/**/.backups/
 .drift/memory/
+
+###############################################################################
+# Re-includes (MUST come after exclusions)
+###############################################################################
+
+# Keep .gitkeep markers
+!**/.gitkeep
+
+# Keep .env.example templates (no secrets, useful for documentation)
+!**/.env.example
+
+###############################################################################
+# Universal junk / caches (MUST BE LAST — overrides re-includes above)
+###############################################################################
+
+# OS / editor junk
+**/.DS_Store
+**/Thumbs.db
+
+# Python caches / compiled artifacts
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/*.pyd
+.ruff_cache/
+.pytest_cache/
+
+# Node (if present)
+node_modules/
+
+# Backup files
+**/*.bak
+**/*~
+**/*.swp
