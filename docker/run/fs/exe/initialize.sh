@@ -34,6 +34,9 @@ fi
 echo "root:${ROOT_PASS}" | chpasswd 2>/dev/null && \
     echo "   ├─ Root password  configured" || \
     echo "   ├─ Root password  skipped (chpasswd unavailable)"
+echo "appuser:${ROOT_PASS}" | chpasswd 2>/dev/null && \
+    echo "   ├─ Appuser SSH    configured" || \
+    echo "   ├─ Appuser SSH    skipped (chpasswd unavailable)"
 
 # update package list to save time later
 apt-get update > /dev/null 2>&1 &
