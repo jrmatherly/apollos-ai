@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Test script to verify FastA2A agent card routing and authentication.
+
+This is a manual testing utility — it requires a running server on localhost:50101.
+Run directly with ``python tests/test_fasta2a_client.py``.
 """
 
 import asyncio
@@ -9,6 +12,8 @@ import sys
 import pytest
 
 from python.helpers import settings
+
+pytestmark = pytest.mark.skip(reason="Manual utility — requires running server")
 
 
 def get_test_urls():

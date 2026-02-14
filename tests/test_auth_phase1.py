@@ -885,9 +885,12 @@ class TestLoginRoutes:
 class TestApiHandlerCurrentUser:
     """Tests for ApiHandler.handle_request setting g.current_user."""
 
-    def test_handle_request_sets_g_current_user(self):
+    async def test_handle_request_sets_g_current_user(self):
         """handle_request should populate g.current_user from session."""
+        import json
+
         from flask import request as flask_request
+
         from python.helpers.api import ApiHandler
 
         app = Flask("test")
@@ -903,21 +906,19 @@ class TestApiHandlerCurrentUser:
         with app.test_request_context(json={}):
             session["user"] = {"id": "api-user", "email": "api@example.com"}
 
-            import asyncio
-
-            response = asyncio.run(handler.handle_request(flask_request))
+            response = await handler.handle_request(flask_request)
             assert response.status_code == 200
-
-            # Parse JSON response
-            import json
 
             data = json.loads(response.data)
             assert data["current_user"]["id"] == "api-user"
             assert data["current_user"]["email"] == "api@example.com"
 
-    def test_handle_request_g_current_user_none_when_no_session(self):
+    async def test_handle_request_g_current_user_none_when_no_session(self):
         """handle_request should set g.current_user to None when no session."""
+        import json
+
         from flask import request as flask_request
+
         from python.helpers.api import ApiHandler
 
         app = Flask("test")
@@ -930,12 +931,8 @@ class TestApiHandlerCurrentUser:
         handler = TestHandler(app, None)
 
         with app.test_request_context(json={}):
-            import asyncio
-
-            response = asyncio.run(handler.handle_request(flask_request))
+            response = await handler.handle_request(flask_request)
             assert response.status_code == 200
-
-            import json
 
             data = json.loads(response.data)
             assert data["current_user"] is None

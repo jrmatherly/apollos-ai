@@ -118,7 +118,7 @@ def test_discovery_folder_suffix_handler_stripped(tmp_path: Path) -> None:
     assert "/sales" in namespaces
 
 
-def test_discovery_empty_folder_warns_and_treats_namespace_unregistered(
+async def test_discovery_empty_folder_warns_and_treats_namespace_unregistered(
     tmp_path: Path, monkeypatch
 ) -> None:
     import socketio
@@ -173,31 +173,28 @@ def test_discovery_empty_folder_warns_and_treats_namespace_unregistered(
 
     asgi_app = socketio.ASGIApp(sio)
 
-    async def _run() -> None:
-        async with _run_asgi_app(asgi_app) as base_url:
-            client = socketio.AsyncClient()
-            connect_error_fut: asyncio.Future[Any] = (
-                asyncio.get_running_loop().create_future()
-            )
+    async with _run_asgi_app(asgi_app) as base_url:
+        client = socketio.AsyncClient()
+        connect_error_fut: asyncio.Future[Any] = (
+            asyncio.get_running_loop().create_future()
+        )
 
-            async def _on_connect_error(data: Any) -> None:
-                if not connect_error_fut.done():
-                    connect_error_fut.set_result(data)
+        async def _on_connect_error(data: Any) -> None:
+            if not connect_error_fut.done():
+                connect_error_fut.set_result(data)
 
-            client.on("connect_error", _on_connect_error, namespace="/empty")
+        client.on("connect_error", _on_connect_error, namespace="/empty")
+        try:
+            with pytest.raises(socketio.exceptions.ConnectionError):
+                await client.connect(base_url, namespaces=["/empty"])
+            err = await asyncio.wait_for(connect_error_fut, timeout=2)
+            assert err["message"] == "UNKNOWN_NAMESPACE"
+            assert err["data"]["namespace"] == "/empty"
+        finally:
             try:
-                with pytest.raises(socketio.exceptions.ConnectionError):
-                    await client.connect(base_url, namespaces=["/empty"])
-                err = await asyncio.wait_for(connect_error_fut, timeout=2)
-                assert err["message"] == "UNKNOWN_NAMESPACE"
-                assert err["data"]["namespace"] == "/empty"
-            finally:
-                try:
-                    await client.disconnect()
-                except Exception:
-                    pass
-
-    asyncio.run(_run())
+                await client.disconnect()
+            except Exception:
+                pass
 
 
 def test_discovery_invalid_modules_fail_fast_with_descriptive_errors(

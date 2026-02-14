@@ -5,7 +5,6 @@ sanitization, file permissions, SSH host key policy, HMAC token derivation,
 sandboxing gates, security headers, and backup name sanitization.
 """
 
-import asyncio
 import hashlib
 import hmac
 import json
@@ -101,8 +100,10 @@ class TestErrorResponseSanitization:
     """API error handler must hide sensitive details in production mode."""
 
     @patch.object(runtime, "is_development", return_value=False)
-    def test_api_error_no_traceback_in_production(self, _mock_dev):
+    async def test_api_error_no_traceback_in_production(self, _mock_dev):
         """In production, API errors must return a generic message."""
+        from flask import request as flask_request
+
         from python.helpers.api import ApiHandler
 
         app = Flask(__name__)
@@ -117,15 +118,7 @@ class TestErrorResponseSanitization:
         handler = FailHandler(app, threading.RLock())
 
         with app.test_request_context(json={}):
-            from flask import request as flask_request
-
-            loop = asyncio.new_event_loop()
-            try:
-                response = loop.run_until_complete(
-                    handler.handle_request(flask_request)
-                )
-            finally:
-                loop.close()
+            response = await handler.handle_request(flask_request)
 
             assert response.status_code == 500
             body = response.get_data(as_text=True)
@@ -133,8 +126,10 @@ class TestErrorResponseSanitization:
             assert "Internal server error" in body
 
     @patch.object(runtime, "is_development", return_value=True)
-    def test_api_error_shows_detail_in_dev(self, _mock_dev):
+    async def test_api_error_shows_detail_in_dev(self, _mock_dev):
         """In development, API errors must include the original detail."""
+        from flask import request as flask_request
+
         from python.helpers.api import ApiHandler
 
         app = Flask(__name__)
@@ -147,23 +142,17 @@ class TestErrorResponseSanitization:
         handler = FailHandler(app, threading.RLock())
 
         with app.test_request_context(json={}):
-            from flask import request as flask_request
-
-            loop = asyncio.new_event_loop()
-            try:
-                response = loop.run_until_complete(
-                    handler.handle_request(flask_request)
-                )
-            finally:
-                loop.close()
+            response = await handler.handle_request(flask_request)
 
             assert response.status_code == 500
             body = response.get_data(as_text=True)
             assert "detailed error info" in body
 
     @patch.object(runtime, "is_development", return_value=False)
-    def test_production_error_is_valid_json(self, _mock_dev):
+    async def test_production_error_is_valid_json(self, _mock_dev):
         """Production error response must be valid JSON with 'error' key."""
+        from flask import request as flask_request
+
         from python.helpers.api import ApiHandler
 
         app = Flask(__name__)
@@ -176,15 +165,7 @@ class TestErrorResponseSanitization:
         handler = FailHandler(app, threading.RLock())
 
         with app.test_request_context(json={}):
-            from flask import request as flask_request
-
-            loop = asyncio.new_event_loop()
-            try:
-                response = loop.run_until_complete(
-                    handler.handle_request(flask_request)
-                )
-            finally:
-                loop.close()
+            response = await handler.handle_request(flask_request)
 
             assert response.status_code == 500
             assert response.mimetype == "application/json"
