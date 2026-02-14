@@ -11,20 +11,20 @@ Apollos AI is a personal, organic agentic AI framework that grows and learns wit
 - **Browser Automation**: Playwright, browser-use
 - **Search**: DuckDuckGo, SearXNG, Perplexity
 - **Document Processing**: unstructured, pypdf, pymupdf, newspaper3k
-- **MCP**: fastmcp for server, mcp SDK for client
+- **MCP**: FastMCP 3.0 for server (>=3.0.0rc2), mcp SDK for client
 - **Scheduling**: crontab
 - **Docker**: Custom base image + DockerfileLocal for local dev
 - **Testing**: pytest, pytest-asyncio, pytest-mock
 
 ## Development Tooling
-- **Task runner**: mise (`mise.toml`, 67 tasks) — manages Python, uv, ruff, biome, git-cliff, pkl, hk
+- **Task runner**: mise (`mise.toml`, 93 tasks) — manages Python, uv, ruff, biome, git-cliff, pkl, hk
 - **Package manager**: uv (`pyproject.toml` source of truth, `uv.lock` committed)
 - **Python linter/formatter**: Ruff (configured in `pyproject.toml`)
 - **CSS/JS linter**: Biome (configured in `biome.json`)
 - **Git hooks**: hk (`hk.pkl`) — pre-commit (ruff, biome, security, hygiene), commit-msg (conventional commits)
 - **Changelog**: git-cliff (`cliff.toml`) — conventional commit parsing, Keep a Changelog format
 - **Codebase analysis**: DriftDetect (`driftdetect@0.9.48`) — pattern scanning, Python analysis, Cortex memory, quality gates
-- **CI/CD**: GitHub Actions (6 workflows: ci, drift, release, hooks-check, codeql, dependency-review) + Dependabot (uv + github-actions)
+- **CI/CD**: GitHub Actions (9 workflows: ci, claude, claude-code-review, drift, release, docker-base, hooks-check, codeql, dependency-review) + Dependabot (uv + github-actions + Docker base images)
 
 ## Architecture
 - `agent.py` — Core Agent and AgentContext classes
@@ -32,11 +32,11 @@ Apollos AI is a personal, organic agentic AI framework that grows and learns wit
 - `initialize.py` — Agent initialization and config management
 - `run_ui.py` — Flask/uvicorn web server entry point
 - `python/tools/` — 19 agent tools (code execution, memory, search, browser, etc.)
-- `python/helpers/` — 89 utility modules (files, docker, SSH, memory, MCP, branding, auth, vault, etc.)
-- `python/api/` — ~75 REST API endpoint handlers (auto-discovered from folder)
+- `python/helpers/` — 103 utility modules (files, docker, SSH, memory, MCP gateway, branding, auth, vault, tenant, RBAC, etc.)
+- `python/api/` — 85 REST API endpoint handlers (auto-discovered from folder)
 - `python/websocket_handlers/` — 4 WebSocket event handlers (namespace-based discovery)
 - `python/extensions/` — 41 extensions across 24 lifecycle hook points
-- `prompts/` — ~100 system prompts and message templates (Markdown/Python)
+- `prompts/` — 102 system prompts and message templates (99 Markdown + 3 Python)
 - `webui/` — Frontend HTML/CSS/JS (Alpine.js + vanilla JS)
 - `knowledge/` — Knowledge base files for RAG
 - `skills/` — SKILL.md standard skills (portable agent capabilities)
