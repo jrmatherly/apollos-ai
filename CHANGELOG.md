@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.0] - 2026-02-14
+
+
+### CI/CD
+
+- Cache virtual environment in test job for faster CI runs
+- Optimize workflows with caching, concurrency, and version updates
+
+
+### Documentation
+
+- Remove stale multi-arch buildx and host networking references
+
+
+### Features
+
+- Add UI theme skill with design tokens and new Apollos AI logo, updating the welcome screen.
+- Add MCP Gateway implementation plan with initial connection pool, and update welcome screen UI with a new watermark and adjusted logo styling.
+- Update fastmcp to 3.0.0rc1, upgrade py-key-value-aio, and add multi-platform ruff binaries.
+
+
+### Security
+
+- Harden .dockerignore with defense-in-depth exclusions
+
+
+### Styling
+
+- *(ui)* Redesign login page with executive theme glass morphism
+
+
 ## [v0.3.5] - 2026-02-13
 
 
