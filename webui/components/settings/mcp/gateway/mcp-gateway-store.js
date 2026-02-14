@@ -5,7 +5,7 @@ const model = {
 	// UI state
 	loading: false,
 	error: null,
-	activeView: "servers", // "servers" | "pool" | "discover"
+	activeView: "servers", // "servers" | "pool" | "discover" | "catalog"
 	showForm: false,
 	editingServer: null,
 
@@ -14,6 +14,8 @@ const model = {
 	poolStatus: null,
 	discoveryResults: [],
 	discoveryQuery: "",
+	catalogEntries: [],
+	catalogYaml: "",
 
 	// Form defaults
 	formData: {
@@ -208,6 +210,46 @@ const model = {
 				this.setView("servers");
 			} else {
 				this.error = res.error || "Failed to install server";
+			}
+		} catch (e) {
+			this.error = e.message;
+		}
+	},
+
+	// ---------- Docker Catalog ----------
+
+	async browseCatalog(yamlContent) {
+		this.loading = true;
+		this.error = null;
+		this.catalogYaml = yamlContent || "";
+		try {
+			const res = await callJsonApi("/mcp_gateway_catalog", {
+				action: "browse",
+				yaml: this.catalogYaml,
+			});
+			if (res.ok) {
+				this.catalogEntries = res.data || [];
+			} else {
+				this.error = res.error || "Failed to parse catalog";
+			}
+		} catch (e) {
+			this.error = e.message;
+		}
+		this.loading = false;
+	},
+
+	async installFromCatalog(entry) {
+		this.error = null;
+		try {
+			const res = await callJsonApi("/mcp_gateway_catalog", {
+				action: "install",
+				entry,
+			});
+			if (res.ok) {
+				await this.loadServers();
+				this.setView("servers");
+			} else {
+				this.error = res.error || "Failed to install from catalog";
 			}
 		} catch (e) {
 			this.error = e.message;

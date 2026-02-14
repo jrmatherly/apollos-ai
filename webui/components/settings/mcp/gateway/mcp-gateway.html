@@ -17,8 +17,8 @@
     <button class="btn btn-sm" @click="$store.mcpGateway.error = null">Dismiss</button>
   </div>
 
-  <!-- Sub-navigation: Servers | Connection Pool | Discover -->
-  <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+  <!-- Sub-navigation: Servers | Connection Pool | Discover | Catalog -->
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
     <button class="btn btn-sm"
             :class="{'btn-primary': $store.mcpGateway.activeView === 'servers'}"
             @click="$store.mcpGateway.setView('servers')">
@@ -33,6 +33,11 @@
             :class="{'btn-primary': $store.mcpGateway.activeView === 'discover'}"
             @click="$store.mcpGateway.setView('discover')">
       Discover Servers
+    </button>
+    <button class="btn btn-sm"
+            :class="{'btn-primary': $store.mcpGateway.activeView === 'catalog'}"
+            @click="$store.mcpGateway.setView('catalog')">
+      Docker Catalog
     </button>
   </div>
 
@@ -309,6 +314,64 @@
     <div x-show="!$store.mcpGateway.loading && !$store.mcpGateway.discoveryQuery"
          style="text-align: center; padding: 2rem; opacity: 0.6;">
       Search the MCP Registry to discover and install servers.
+    </div>
+  </div>
+
+  <!-- ========== Docker Catalog View ========== -->
+  <div x-show="$store.mcpGateway.activeView === 'catalog'">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0;">Docker MCP Catalog</h3>
+    </div>
+
+    <p style="opacity: 0.7; margin-bottom: 1rem;">
+      Paste YAML from <code>docker mcp catalog show docker-mcp</code> to browse and install servers.
+    </p>
+
+    <!-- YAML Input -->
+    <div class="form-group" style="margin-bottom: 0.75rem;">
+      <textarea class="input" rows="8" style="font-family: monospace; width: 100%;"
+                placeholder="servers:&#10;  - name: docker/github-mcp&#10;    image: ghcr.io/docker/github-mcp:latest&#10;    transport: stdio"
+                x-model="$store.mcpGateway.catalogYaml"></textarea>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <button class="btn btn-sm btn-primary"
+              @click="$store.mcpGateway.browseCatalog($store.mcpGateway.catalogYaml)">
+        <span class="material-symbols-outlined" style="font-size: 1rem;">upload</span>
+        Parse Catalog
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div x-show="$store.mcpGateway.loading" style="text-align: center; padding: 2rem;">
+      <span class="material-symbols-outlined spinning">progress_activity</span>
+    </div>
+
+    <!-- Catalog Entries -->
+    <div x-show="!$store.mcpGateway.loading && $store.mcpGateway.catalogEntries.length > 0">
+      <template x-for="entry in $store.mcpGateway.catalogEntries" :key="entry.name">
+        <div style="padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid var(--border-color, #333); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+          <div style="flex: 1;">
+            <div style="font-weight: 600;" x-text="entry.name"></div>
+            <div style="opacity: 0.7; font-size: 0.9em;" x-text="entry.description || 'No description'"></div>
+            <div style="margin-top: 0.25rem;">
+              <span class="badge" x-text="entry.transport || 'http'"></span>
+              <span x-show="entry.image" class="badge" style="margin-left: 0.25rem;" x-text="entry.image"></span>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-primary" style="white-space: nowrap;"
+                  @click="$store.mcpGateway.installFromCatalog(entry)">
+            <span class="material-symbols-outlined" style="font-size: 1rem;">download</span>
+            Install
+          </button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Empty state -->
+    <div x-show="!$store.mcpGateway.loading && $store.mcpGateway.catalogEntries.length === 0 && $store.mcpGateway.catalogYaml"
+         style="text-align: center; padding: 2rem; opacity: 0.6;">
+      No valid entries found in the pasted YAML.
     </div>
   </div>
 </div>
