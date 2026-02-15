@@ -8,20 +8,13 @@ per operation (replacing the ephemeral _execute_with_session pattern).
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
-import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
-
-_SAFE_LOG_RE = re.compile(r"[^a-zA-Z0-9_.\-/]")
-
-
-def _sanitize_log_value(value: str) -> str:
-    """Sanitize user input for safe logging — allowlist alphanumeric + limited punctuation."""
-    return _SAFE_LOG_RE.sub("_", value)[:128]
 
 
 @dataclass
@@ -89,9 +82,8 @@ class McpConnectionPool:
                 connection=conn,
                 in_use=True,
             )
-            logger.info(
-                "Created new pooled connection for %s", _sanitize_log_value(server_name)
-            )
+            server_id = hashlib.sha256(server_name.encode()).hexdigest()[:12]
+            logger.info("Created new pooled connection for %s", server_id)
             return conn
 
     async def release(self, server_name: str) -> None:
@@ -109,10 +101,8 @@ class McpConnectionPool:
                 try:
                     await pooled.connection.close()
                 except Exception:
-                    logger.warning(
-                        "Error closing connection %s",
-                        _sanitize_log_value(server_name),
-                    )
+                    server_id = hashlib.sha256(server_name.encode()).hexdigest()[:12]
+                    logger.warning("Error closing connection %s", server_id)
 
     async def health_check(self) -> None:
         """Check all connections and evict unhealthy ones."""
@@ -123,9 +113,8 @@ class McpConnectionPool:
                     to_evict.append(name)
 
         for name in to_evict:
-            logger.warning(
-                "Evicting unhealthy connection: %s", _sanitize_log_value(name)
-            )
+            name_id = hashlib.sha256(name.encode()).hexdigest()[:12]
+            logger.warning("Evicting unhealthy connection: %s", name_id)
             await self.evict(name)
 
     async def _evict_oldest_idle(self) -> None:
@@ -142,9 +131,8 @@ class McpConnectionPool:
                 await pooled.connection.close()
             except Exception:
                 pass
-        logger.info(
-            "Evicted idle connection %s to make room", _sanitize_log_value(oldest_name)
-        )
+        oldest_id = hashlib.sha256(oldest_name.encode()).hexdigest()[:12]
+        logger.info("Evicted idle connection %s to make room", oldest_id)
 
     async def close_all(self) -> None:
         """Close all connections. Call on shutdown."""
