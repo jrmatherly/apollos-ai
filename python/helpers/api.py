@@ -1,3 +1,4 @@
+import html
 import json
 import threading
 from abc import abstractmethod
@@ -127,7 +128,11 @@ class ApiHandler:
             error = format_error(e)
             PrintStyle.error(f"API error: {error}")
             if runtime.is_development():
-                return Response(response=error, status=500, mimetype="text/plain")
+                return Response(
+                    response=html.escape(error),
+                    status=500,
+                    mimetype="text/plain",
+                )
             else:
                 return Response(
                     response=json.dumps({"error": "Internal server error"}),

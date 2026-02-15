@@ -16,6 +16,11 @@ from typing import Any, Awaitable, Callable
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_log_value(value: str) -> str:
+    """Remove newlines and control characters from user input before logging."""
+    return "".join(c if c.isprintable() and c not in "\n\r\t" else "_" for c in value)
+
+
 @dataclass
 class PooledConnection:
     """Wrapper around an MCP connection with metadata."""
@@ -81,7 +86,9 @@ class McpConnectionPool:
                 connection=conn,
                 in_use=True,
             )
-            logger.info("Created new pooled connection for %s", server_name)
+            logger.info(
+                "Created new pooled connection for %s", _sanitize_log_value(server_name)
+            )
             return conn
 
     async def release(self, server_name: str) -> None:
@@ -99,7 +106,10 @@ class McpConnectionPool:
                 try:
                     await pooled.connection.close()
                 except Exception:
-                    logger.warning("Error closing connection %s", server_name)
+                    logger.warning(
+                        "Error closing connection %s",
+                        _sanitize_log_value(server_name),
+                    )
 
     async def health_check(self) -> None:
         """Check all connections and evict unhealthy ones."""
@@ -110,7 +120,9 @@ class McpConnectionPool:
                     to_evict.append(name)
 
         for name in to_evict:
-            logger.warning("Evicting unhealthy connection: %s", name)
+            logger.warning(
+                "Evicting unhealthy connection: %s", _sanitize_log_value(name)
+            )
             await self.evict(name)
 
     async def _evict_oldest_idle(self) -> None:
@@ -127,7 +139,9 @@ class McpConnectionPool:
                 await pooled.connection.close()
             except Exception:
                 pass
-        logger.info("Evicted idle connection %s to make room", oldest_name)
+        logger.info(
+            "Evicted idle connection %s to make room", _sanitize_log_value(oldest_name)
+        )
 
     async def close_all(self) -> None:
         """Close all connections. Call on shutdown."""
