@@ -9,16 +9,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
 
+_SAFE_LOG_RE = re.compile(r"[^a-zA-Z0-9_.\-/]")
+
 
 def _sanitize_log_value(value: str) -> str:
-    """Remove newlines and control characters from user input before logging."""
-    return "".join(c if c.isprintable() and c not in "\n\r\t" else "_" for c in value)
+    """Sanitize user input for safe logging — allowlist alphanumeric + limited punctuation."""
+    return _SAFE_LOG_RE.sub("_", value)[:128]
 
 
 @dataclass

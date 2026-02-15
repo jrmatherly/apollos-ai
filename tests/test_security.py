@@ -126,8 +126,8 @@ class TestErrorResponseSanitization:
             assert "Internal server error" in body
 
     @patch.object(runtime, "is_development", return_value=True)
-    async def test_api_error_shows_detail_in_dev(self, _mock_dev):
-        """In development, API errors must include the original detail."""
+    async def test_api_error_hides_detail_in_dev(self, _mock_dev):
+        """Even in development, API errors must not expose stack traces to clients."""
         from flask import request as flask_request
 
         from python.helpers.api import ApiHandler
@@ -146,7 +146,8 @@ class TestErrorResponseSanitization:
 
             assert response.status_code == 500
             body = response.get_data(as_text=True)
-            assert "detailed error info" in body
+            assert "detailed error info" not in body
+            assert "Internal server error" in body
 
     @patch.object(runtime, "is_development", return_value=False)
     async def test_production_error_is_valid_json(self, _mock_dev):

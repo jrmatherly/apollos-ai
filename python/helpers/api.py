@@ -1,4 +1,3 @@
-import html
 import json
 import threading
 from abc import abstractmethod
@@ -15,7 +14,6 @@ from flask import (  # noqa: F401 — send_file, session re-exported for API han
 
 from agent import AgentContext
 from initialize import initialize_agent
-from python.helpers import runtime
 from python.helpers.errors import format_error
 from python.helpers.print_style import PrintStyle
 from python.helpers.tenant import SYSTEM_USER_ID, TenantContext
@@ -127,18 +125,12 @@ class ApiHandler:
         except Exception as e:
             error = format_error(e)
             PrintStyle.error(f"API error: {error}")
-            if runtime.is_development():
-                return Response(
-                    response=html.escape(error),
-                    status=500,
-                    mimetype="text/plain",
-                )
-            else:
-                return Response(
-                    response=json.dumps({"error": "Internal server error"}),
-                    status=500,
-                    mimetype="application/json",
-                )
+            # Never expose stack traces to clients — log only
+            return Response(
+                response=json.dumps({"error": "Internal server error"}),
+                status=500,
+                mimetype="application/json",
+            )
 
     def _get_tenant_ctx(self) -> TenantContext:
         """Build TenantContext from g.current_user (set by handle_request)."""
